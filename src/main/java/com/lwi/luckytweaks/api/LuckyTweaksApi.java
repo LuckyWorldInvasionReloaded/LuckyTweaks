@@ -2,6 +2,7 @@ package com.lwi.luckytweaks.api;
 
 import com.lwi.luckytweaks.LuckCaps;
 import com.lwi.luckytweaks.LuckState;
+import com.lwi.luckytweaks.LuckyBlockBreakBus;
 import net.minecraft.resources.ResourceLocation;
 
 /**
@@ -58,5 +59,16 @@ public final class LuckyTweaksApi {
     /** Luck contributed so far (via {@link #addLuck}) to the break currently being processed. */
     public static int getContributedLuck() {
         return LuckState.BONUS.get();
+    }
+
+    /**
+     * Register a listener notified when a player breaks a (non-disabled) lucky block. Fired
+     * server-side at {@code HIGHEST} priority, after the block's stored Luck is captured and before
+     * the drop roll. The {@code capturedLuck} handed to the listener is the block's stored Luck
+     * (a rarity proxy). Listeners must not throw — exceptions are swallowed so the drop pipeline is
+     * never broken. Added for Lucky XP (award XP on lucky-block breaks).
+     */
+    public static void registerBreakListener(LuckyBlockBreakListener listener) {
+        LuckyBlockBreakBus.register(listener);
     }
 }

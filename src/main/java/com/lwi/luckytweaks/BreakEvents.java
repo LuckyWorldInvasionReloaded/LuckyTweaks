@@ -4,6 +4,7 @@ import com.lwi.luckytweaks.util.LuckyBlocks;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
@@ -88,6 +89,14 @@ public final class BreakEvents {
         // Resolve the block's cap NOW (we know the id here); the mixin applies it after bonuses.
         if (id != null) {
             LuckState.CAP.set(LuckCaps.capFor(id));
+        }
+
+        // Notify external listeners (e.g. Lucky XP) that a player broke a lucky block. Fired after
+        // capture, before the roll. capturedLuck is the block's stored Luck -- a proxy for rarity.
+        if (id != null && event.getPlayer() instanceof ServerPlayer serverPlayer
+                && !(serverPlayer instanceof net.minecraftforge.common.util.FakePlayer)) {
+            Integer cl = LuckState.CAPTURED.get();
+            LuckyBlockBreakBus.fire(serverPlayer, id, event.getPos(), cl != null ? cl : 0);
         }
     }
 }
