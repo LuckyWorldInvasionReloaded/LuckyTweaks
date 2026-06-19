@@ -8,6 +8,8 @@
     "LuckCraftingRecipeMixin",
     "LuckyWorldGenMixin"
   ],
-  "client": [],
+  "client": [
+    "BrandingMixin"
+  ],
   "server": []
 }
