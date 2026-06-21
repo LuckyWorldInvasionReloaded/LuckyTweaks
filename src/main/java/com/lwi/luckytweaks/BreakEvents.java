@@ -30,10 +30,11 @@ import net.minecraftforge.registries.ForgeRegistries;
 @Mod.EventBusSubscriber(modid = LuckyTweaksMod.MODID)
 public final class BreakEvents {
     /** Hard bounds on any luck value handed to the Lucky Block mod's weight formula. The formula
-     *  {@code levelIncrease = 1/(1 - |luck|*0.0077)} has a singularity at ~129.87; 120 stays safely below.
-     *  Only TRANSIENT roll values may live in (100, 120] (e.g. a +100 block plus equipment bonuses). */
+     *  {@code levelIncrease = 1/(1 - |luck|*0.0077)} has a singularity at ~129.87. Effective luck is
+     *  capped at +100 (user rule 2026-06-20: ring/belt/event ADD onto the block's luck, but the total
+     *  never exceeds +100; per-block caps like the Tools LB's +50 still apply below that). */
     public static final int LUCK_FLOOR = -100;
-    public static final int LUCK_CEIL = 120;
+    public static final int LUCK_CEIL = 100;
     /** Bound on luck STORED on an item/block: the Lucky Block mod itself never produces blocks outside
      *  [-100, 100], so anything we write (fusion results...) must stay inside it too. */
     public static final int STORED_LUCK_MAX = 100;
@@ -89,6 +90,12 @@ public final class BreakEvents {
         // Resolve the block's cap NOW (we know the id here); the mixin applies it after bonuses.
         if (id != null) {
             LuckState.CAP.set(LuckCaps.capFor(id));
+        }
+        // Capture player + block id for the /luckychance debug report (real players only).
+        LuckState.BLOCK_ID.set(id);
+        if (event.getPlayer() instanceof ServerPlayer dbgPlayer
+                && !(dbgPlayer instanceof net.minecraftforge.common.util.FakePlayer)) {
+            LuckState.PLAYER.set(dbgPlayer);
         }
 
         // Notify external listeners (e.g. Lucky XP) that a player broke a lucky block. Fired after

@@ -27,9 +27,10 @@ public final class LuckyTweaksClient {
                     ConfigScreenHandler.ConfigScreenFactory.class,
                     () -> new ConfigScreenHandler.ConfigScreenFactory(
                             (mc, parent) -> new LuckyTweaksConfigScreen(parent)));
-            // Run-integrity seal shows as a section on the Lucky Stats screen (when that mod is present).
+            // Run-integrity seal + the combined "Chance" HUD line both live on Lucky Stats (when present).
             if (SealService.statsLoaded()) {
                 SealDisplay.register();
+                LuckChanceHud.register();
             }
         });
     }

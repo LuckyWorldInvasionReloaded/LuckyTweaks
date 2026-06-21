@@ -13,15 +13,28 @@ public final class LuckyTweaksApi {
     private LuckyTweaksApi() {}
 
     /**
-     * Contribute luck to the lucky-block break currently being processed on this thread.
-     *
-     * <p>Call from a {@code BlockEvent.BreakEvent} handler at priority HIGH or below (Lucky Tweaks
-     * resets the break state at HIGHEST). Contributions accumulate, are added on top of the block's
-     * captured Luck, then bounded by the block's cap (if any) and the global safety clamp before
-     * being handed to the Lucky Block mod's drop roll. Negative contributions are allowed.
+     * Contribute CHANCE to the lucky-block break currently being processed, in PERCENTILE POINTS
+     * (ring, belt, event, invasion malus...). Contributions are additive and are added on top of the
+     * block's own mean percentile, then translated into the block-specific raw Luck -- so the same
+     * "+X% chance" has the same effect on every block, whatever its drop table. Positive raises the
+     * player's odds, negative lowers them. Call from a {@code BlockEvent.BreakEvent} handler at
+     * priority HIGH or below (Lucky Tweaks resets the break state at HIGHEST).
      */
-    public static void addLuck(int bonus) {
-        LuckState.BONUS.set(LuckState.BONUS.get() + bonus);
+    public static void addChance(int percentilePoints) {
+        LuckState.CHANCE.set(LuckState.CHANCE.get() + percentilePoints);
+    }
+
+    /**
+     * Grant ONE extra "second chance" at the block's BEST (top) tier for the current break: after the
+     * roll, if the chosen drop is NOT the top tier, the picker is re-run once (per granted re-roll). A
+     * roll that already hit the top is kept untouched -- never re-rolled, so a jackpot is never lost.
+     * Applied AFTER the per-block luck cap, so it lifts the REAL odds past the cap (e.g. the Lucky Belt
+     * doubling the Tools Lucky Block jackpot even when its luck is capped). It is purely backend: the
+     * discarded pick is never executed, so the player only ever sees the final drop. Additive (call N
+     * times for N re-rolls). Call from a {@code BlockEvent.BreakEvent} handler at HIGH or below.
+     */
+    public static void addTopReroll() {
+        LuckState.REROLLS.set(LuckState.REROLLS.get() + 1);
     }
 
     /**
@@ -56,9 +69,9 @@ public final class LuckyTweaksApi {
         return LuckState.CAPTURED.get();
     }
 
-    /** Luck contributed so far (via {@link #addLuck}) to the break currently being processed. */
-    public static int getContributedLuck() {
-        return LuckState.BONUS.get();
+    /** Chance (percentile points) contributed so far (via {@link #addChance}) to the current break. */
+    public static int getContributedChance() {
+        return LuckState.CHANCE.get();
     }
 
     /**
