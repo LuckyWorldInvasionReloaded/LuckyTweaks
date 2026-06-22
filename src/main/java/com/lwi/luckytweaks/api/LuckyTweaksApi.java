@@ -3,7 +3,11 @@ package com.lwi.luckytweaks.api;
 import com.lwi.luckytweaks.LuckCaps;
 import com.lwi.luckytweaks.LuckState;
 import com.lwi.luckytweaks.LuckyBlockBreakBus;
+import com.lwi.luckytweaks.util.LuckyBlocks;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.level.block.state.BlockState;
+
+import java.util.List;
 
 /**
  * Public API of Lucky Tweaks. Stable entry points for other mods; everything else in this jar is
@@ -83,5 +87,24 @@ public final class LuckyTweaksApi {
      */
     public static void registerBreakListener(LuckyBlockBreakListener listener) {
         LuckyBlockBreakBus.register(listener);
+    }
+
+    /**
+     * Whether this block is a lucky block (the {@code lucky} namespace + addons, plus cross-mod
+     * lookalikes like {@code fuze_relics:lucky_blockling}; technical {@code *_render} proxies excluded).
+     * The single source of truth for "is this a lucky block", shared so consumers never re-implement
+     * the heuristic.
+     */
+    public static boolean isLuckyBlock(BlockState state) {
+        return LuckyBlocks.isLuckyBlock(state);
+    }
+
+    /**
+     * The registry ids of every lucky block currently registered. The block registry is frozen after
+     * load, so callers may compute this once and cache it. Added for Lucky XP's event roulette, which
+     * picks one lucky block to boost. Order follows registry iteration order.
+     */
+    public static List<ResourceLocation> getLuckyBlockIds() {
+        return LuckyBlocks.allLuckyBlockIds();
     }
 }
