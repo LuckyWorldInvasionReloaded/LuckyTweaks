@@ -26,6 +26,10 @@ public final class TweaksConfig {
     /** Master switch for the fusion recipe (see {@link LuckFusionRecipe}). */
     public static final ForgeConfigSpec.BooleanValue ENABLE_LUCK_FUSION;
 
+    /** Make Fuze Relics' crocodile drop swallowed items on death instead of deleting them
+     *  (see {@link CrocodileSwallow}). */
+    public static final ForgeConfigSpec.BooleanValue FIX_CROCODILE;
+
     /** Lucky blocks switched off by the pack (see {@link DisabledBlocks}). */
     public static final ForgeConfigSpec.ConfigValue<List<? extends String>> DISABLED_LUCKY_BLOCKS;
 
@@ -122,6 +126,18 @@ public final class TweaksConfig {
                         "Example: [\"lucky:lucky_block@minecraft:the_nether=0\", \"lucky:amongus_lucky_block@minecraft:overworld=120\"]")
                 .defineListAllowEmpty(List.of("spawnRules"), List::of,
                         o -> o instanceof String s && s.matches("[a-z0-9_.-]+:[a-z0-9_./-]+@[a-z0-9_.-]+:[a-z0-9_./-]+=\\d+"));
+        builder.pop();
+
+        builder.push("crocodile");
+        FIX_CROCODILE = builder
+                .comment(
+                        "Make Fuze Relics' crocodile give items back instead of destroying them.",
+                        "The crocodile normally eats (deletes) one item from your main hand on 25% of the",
+                        "hits you land on it -- with its 40 HP that usually means losing your weapon before",
+                        "it dies. When ON, the eaten item is stashed on the crocodile and dropped when it is",
+                        "killed, so you just have to kill it to get your gear back. Does nothing when Fuze",
+                        "Relics isn't installed. Default ON.")
+                .define("fixCrocodile", true);
         builder.pop();
 
         COMMON_SPEC = builder.build();

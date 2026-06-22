@@ -6,7 +6,8 @@
   "mixins": [
     "DropEvaluatorMixin",
     "LuckCraftingRecipeMixin",
-    "LuckyWorldGenMixin"
+    "LuckyWorldGenMixin",
+    "CrocodileSwallowMixin"
   ],
   "client": [
     "BrandingMixin",
