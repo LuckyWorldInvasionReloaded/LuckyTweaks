@@ -9,7 +9,8 @@
     "LuckyWorldGenMixin"
   ],
   "client": [
-    "BrandingMixin"
+    "BrandingMixin",
+    "YakurumTooltipGuardMixin"
   ],
   "server": []
 }
