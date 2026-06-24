@@ -30,6 +30,10 @@ public final class TweaksConfig {
      *  (see {@link CrocodileSwallow}). */
     public static final ForgeConfigSpec.BooleanValue FIX_CROCODILE;
 
+    /** Master switch for the optional PlayerRevive co-op revive (see
+     *  {@link com.lwi.luckytweaks.mixin.ReviveDisableMixin}). */
+    public static final ForgeConfigSpec.BooleanValue ENABLE_PLAYER_REVIVE;
+
     /** Lucky blocks switched off by the pack (see {@link DisabledBlocks}). */
     public static final ForgeConfigSpec.ConfigValue<List<? extends String>> DISABLED_LUCKY_BLOCKS;
 
@@ -40,6 +44,12 @@ public final class TweaksConfig {
      * {@link DisabledBlocks}.
      */
     public static final ForgeConfigSpec.ConfigValue<List<? extends String>> SPAWN_RULES;
+
+    /** Player-locator bar (multiplayer): other players' directions shown above the XP bar. */
+    public static final ForgeConfigSpec.BooleanValue LOCATOR_ENABLED;
+    public static final ForgeConfigSpec.IntValue LOCATOR_MAX_DISTANCE;
+    public static final ForgeConfigSpec.IntValue LOCATOR_FADE_DISTANCE;
+    public static final ForgeConfigSpec.IntValue LOCATOR_UPDATE_TICKS;
 
     private static final List<String> DEFAULT_HARMFUL_MARKERS = List.of(
             "ID=tnt", "lightning_bolt", "ID=lava", "flowing_lava", "type=block,ID=fire", "cobweb", "spawn_egg");
@@ -138,6 +148,38 @@ public final class TweaksConfig {
                         "killed, so you just have to kill it to get your gear back. Does nothing when Fuze",
                         "Relics isn't installed. Default ON.")
                 .define("fixCrocodile", true);
+        builder.pop();
+
+        builder.push("playerRevive");
+        ENABLE_PLAYER_REVIVE = builder
+                .comment(
+                        "Let the optional PlayerRevive mod work: a player who would die instead drops into a",
+                        "'bleeding' state for a teammate to revive, rather than dying outright. Meant for",
+                        "multiplayer co-op. When OFF (default), players die normally even with PlayerRevive",
+                        "installed -- Lucky Tweaks forces the death through (only when PlayerRevive actually",
+                        "downed the player, so Totems of Undying are left alone), keeping the pack hardcore by",
+                        "default. Does nothing when PlayerRevive isn't installed. Default OFF.")
+                .define("enablePlayerRevive", false);
+        builder.pop();
+
+        builder.push("locator");
+        LOCATOR_ENABLED = builder
+                .comment(
+                        "Show a compass-like strip above the XP bar with the direction of nearby players",
+                        "(multiplayer). Centre = ahead, edges = behind; markers fade with distance and are",
+                        "coloured per player. Server-controlled (it pushes positions to clients). Default ON.")
+                .define("enabled", true);
+        LOCATOR_MAX_DISTANCE = builder
+                .comment("Maximum horizontal distance (blocks) at which a player shows on the locator bar.",
+                        "0 = unlimited: every player in the same dimension is tracked.")
+                .defineInRange("maxDistance", 0, 0, 8192);
+        LOCATOR_FADE_DISTANCE = builder
+                .comment("Distance (blocks) over which a marker fades to its faintest. Independent of",
+                        "maxDistance, so fading still works when maxDistance is unlimited (0).")
+                .defineInRange("fadeDistance", 256, 16, 8192);
+        LOCATOR_UPDATE_TICKS = builder
+                .comment("How often the server pushes player positions, in ticks (20 = once per second).")
+                .defineInRange("updateTicks", 8, 1, 100);
         builder.pop();
 
         COMMON_SPEC = builder.build();

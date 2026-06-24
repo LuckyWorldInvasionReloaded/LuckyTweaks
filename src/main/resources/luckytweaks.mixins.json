@@ -7,11 +7,14 @@
     "DropEvaluatorMixin",
     "LuckCraftingRecipeMixin",
     "LuckyWorldGenMixin",
-    "CrocodileSwallowMixin"
+    "CrocodileSwallowMixin",
+    "ReviveDisableMixin",
+    "EnhancedAiOpenDoorsMixin"
   ],
   "client": [
     "BrandingMixin",
-    "YakurumTooltipGuardMixin"
+    "YakurumTooltipGuardMixin",
+    "ReviveOverlayDedupeMixin"
   ],
   "server": []
 }

@@ -60,6 +60,7 @@ public class LuckyTweaksConfigScreen extends Screen {
     private boolean weaponFix;
     private boolean fusion;
     private boolean crocodile;
+    private boolean playerRevive;
     private double multiplier;
     private final List<String> blockIds = new ArrayList<>();
     private final Map<String, Block> blockById = new HashMap<>();
@@ -71,6 +72,7 @@ public class LuckyTweaksConfigScreen extends Screen {
     private Checkbox weaponBox;
     private Checkbox fusionBox;
     private Checkbox crocodileBox;
+    private Checkbox reviveBox;
     private MultiplierSlider slider;
     private BlockList list;
 
@@ -80,6 +82,7 @@ public class LuckyTweaksConfigScreen extends Screen {
         this.weaponFix = TweaksConfig.FIX_LUCKY_WEAPONS.get();
         this.fusion = TweaksConfig.ENABLE_LUCK_FUSION.get();
         this.crocodile = TweaksConfig.FIX_CROCODILE.get();
+        this.playerRevive = TweaksConfig.ENABLE_PLAYER_REVIVE.get();
         this.multiplier = TweaksConfig.LUCKY_BLOCK_SPAWN_MULTIPLIER.get();
 
         List<Block> blocks = new ArrayList<>();
@@ -142,6 +145,7 @@ public class LuckyTweaksConfigScreen extends Screen {
         this.weaponBox = null;
         this.fusionBox = null;
         this.crocodileBox = null;
+        this.reviveBox = null;
         this.slider = null;
         this.list = null;
 
@@ -153,10 +157,13 @@ public class LuckyTweaksConfigScreen extends Screen {
                     Component.literal("Enable lucky-block fusion"), this.fusion, true);
             this.crocodileBox = new Checkbox(x, 110, 300, 20,
                     Component.literal("Crocodiles return swallowed items"), this.crocodile, true);
-            this.slider = new MultiplierSlider(x, 136, 300, 20, this.multiplier);
+            this.reviveBox = new Checkbox(x, 136, 300, 20,
+                    Component.literal("Enable Player Revive (multiplayer co-op)"), this.playerRevive, true);
+            this.slider = new MultiplierSlider(x, 162, 300, 20, this.multiplier);
             this.addRenderableWidget(this.weaponBox);
             this.addRenderableWidget(this.fusionBox);
             this.addRenderableWidget(this.crocodileBox);
+            this.addRenderableWidget(this.reviveBox);
             this.addRenderableWidget(this.slider);
         } else {
             this.list = new BlockList(this.minecraft, this.width, this.height, LIST_TOP, this.height - 36, 24);
@@ -193,6 +200,9 @@ public class LuckyTweaksConfigScreen extends Screen {
         if (this.crocodileBox != null) {
             this.crocodile = this.crocodileBox.selected();
         }
+        if (this.reviveBox != null) {
+            this.playerRevive = this.reviveBox.selected();
+        }
         if (this.slider != null) {
             this.multiplier = this.slider.multiplier();
         }
@@ -202,6 +212,7 @@ public class LuckyTweaksConfigScreen extends Screen {
         this.weaponFix = true;
         this.fusion = true;
         this.crocodile = true;
+        this.playerRevive = false;
         this.multiplier = 1.0;
         for (Map.Entry<String, State> e : this.states.entrySet()) {
             Set<String> nat = this.nativeById.get(e.getKey());
@@ -247,6 +258,7 @@ public class LuckyTweaksConfigScreen extends Screen {
         TweaksConfig.FIX_LUCKY_WEAPONS.set(this.weaponFix);
         TweaksConfig.ENABLE_LUCK_FUSION.set(this.fusion);
         TweaksConfig.FIX_CROCODILE.set(this.crocodile);
+        TweaksConfig.ENABLE_PLAYER_REVIVE.set(this.playerRevive);
         TweaksConfig.LUCKY_BLOCK_SPAWN_MULTIPLIER.set(this.multiplier);
 
         List<String> disabledList = new ArrayList<>();
