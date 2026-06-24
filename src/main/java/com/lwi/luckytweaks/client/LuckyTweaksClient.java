@@ -5,6 +5,8 @@ import com.lwi.luckytweaks.seal.SealDisplay;
 import com.lwi.luckytweaks.seal.SealService;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.ConfigScreenHandler;
+import net.minecraftforge.client.event.RegisterGuiOverlaysEvent;
+import net.minecraftforge.client.gui.overlay.VanillaGuiOverlay;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
@@ -33,5 +35,10 @@ public final class LuckyTweaksClient {
                 LuckChanceHud.register();
             }
         });
+    }
+
+    @SubscribeEvent
+    public static void onRegisterOverlays(RegisterGuiOverlaysEvent event) {
+        event.registerAbove(VanillaGuiOverlay.EXPERIENCE_BAR.id(), "player_locator", LocatorOverlay.INSTANCE);
     }
 }
