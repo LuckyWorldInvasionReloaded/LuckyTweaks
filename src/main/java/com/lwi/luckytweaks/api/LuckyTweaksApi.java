@@ -1,12 +1,16 @@
 package com.lwi.luckytweaks.api;
 
+import com.lwi.luckytweaks.DebugReport;
 import com.lwi.luckytweaks.LuckCaps;
 import com.lwi.luckytweaks.LuckState;
 import com.lwi.luckytweaks.LuckyBlockBreakBus;
 import com.lwi.luckytweaks.util.LuckyBlocks;
+import com.lwi.luckytweaks.util.WorldGenInfo;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.block.state.BlockState;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -106,5 +110,46 @@ public final class LuckyTweaksApi {
      */
     public static List<ResourceLocation> getLuckyBlockIds() {
         return LuckyBlocks.allLuckyBlockIds();
+    }
+
+    /**
+     * Whether this lucky block naturally generates in the given dimension, per the Lucky Block mod's
+     * world-gen registry. Degrades to {@code false} if the info can't be read.
+     */
+    public static boolean spawnsNaturallyIn(ResourceLocation blockId, ResourceLocation dimension) {
+        return WorldGenInfo.nativeDims(blockId.toString()).contains(dimension.toString());
+    }
+
+    /**
+     * The lucky blocks that naturally generate in the given dimension (a subset of
+     * {@link #getLuckyBlockIds()}). Added for Lucky XP's event roulette, so it only ever shows and picks
+     * blocks relevant to where the player actually is.
+     */
+    public static List<ResourceLocation> getLuckyBlockIds(ResourceLocation dimension) {
+        String dim = dimension.toString();
+        List<ResourceLocation> out = new ArrayList<>();
+        for (ResourceLocation id : LuckyBlocks.allLuckyBlockIds()) {
+            if (WorldGenInfo.nativeDims(id.toString()).contains(dim)) {
+                out.add(id);
+            }
+        }
+        return out;
+    }
+
+    /**
+     * The block's natural "1 in N chunks" spawn rate in the given dimension (lower = more common,
+     * higher = rarer), or a default (~200) when it can't be read. Added for Lucky XP's roulette to grade
+     * blocks by spawn rarity.
+     */
+    public static int naturalRate(ResourceLocation blockId, ResourceLocation dimension) {
+        return WorldGenInfo.nativeRate(blockId.toString(), dimension.toString());
+    }
+
+    /**
+     * Whether the per-break luck chat debug ({@code /luckychance debug}) is ON for this player. Lets other
+     * mods piggy-back on that single toggle (e.g. Lucky XP draws the "Luck +X" block holograms while it's on).
+     */
+    public static boolean isBreakDebugOn(ServerPlayer player) {
+        return DebugReport.isOn(player);
     }
 }
