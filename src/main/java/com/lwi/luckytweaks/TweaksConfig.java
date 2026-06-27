@@ -167,8 +167,9 @@ public final class TweaksConfig {
                 .comment(
                         "Show a compass-like strip above the XP bar with the direction of nearby players",
                         "(multiplayer). Centre = ahead, edges = behind; markers fade with distance and are",
-                        "coloured per player. Server-controlled (it pushes positions to clients). Default ON.")
-                .define("enabled", true);
+                        "coloured per player. Server-controlled (it pushes positions to clients).",
+                        "WIP and not ready -- OFF by default (its overlay isn't even registered yet).")
+                .define("enabled", false);
         LOCATOR_MAX_DISTANCE = builder
                 .comment("Maximum horizontal distance (blocks) at which a player shows on the locator bar.",
                         "0 = unlimited: every player in the same dimension is tracked.")
