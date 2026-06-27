@@ -6,8 +6,12 @@ import com.lwi.luckytweaks.LuckState;
 import com.lwi.luckytweaks.LuckyBlockBreakBus;
 import com.lwi.luckytweaks.util.LuckyBlocks;
 import com.lwi.luckytweaks.util.WorldGenInfo;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.state.BlockState;
 
 import java.util.ArrayList;
@@ -151,5 +155,74 @@ public final class LuckyTweaksApi {
      */
     public static boolean isBreakDebugOn(ServerPlayer player) {
         return DebugReport.isOn(player);
+    }
+
+    /**
+     * The NBT key that marks an item or entity as a "legendary" drop. Injected into the lucky blocks'
+     * {@code drops.txt} by an offline script (never written by this mod at runtime); the Lucky Block
+     * mod preserves it from the drop string all the way to the produced ItemStack. Stored as a byte
+     * ({@code LWLeg=1b}). The single source of truth for "is this drop legendary?", shared so every
+     * feature (fanfare, stats counter, Totem boost) reads the same tag.
+     */
+    public static final String LEG_TAG = "LWLeg";
+
+    /**
+     * The NBT key that marks an item/entity/command as a "cursed" drop (a bad drop the pack deliberately
+     * singled out). Injected offline into the lucky blocks' {@code drops.txt} by a script (never written at
+     * runtime), exactly like {@link #LEG_TAG} but for curses; stored as {@code LWCurse=1b}. There is
+     * deliberately NO sound/particle/tell on a curse -- it must not alert the player (the counter bump is
+     * even delayed 5 s, see {@code mixin.CursedCounterMixin}). Single source of truth for "is this drop cursed?".
+     */
+    public static final String CURSE_TAG = "LWCurse";
+
+    /**
+     * Whether this item is a legendary drop: it carries a non-zero {@link #LEG_TAG} byte in its NBT.
+     * A zero value ({@code LWLeg=0b}) counts as "not legendary", so an explicit un-mark is possible.
+     * Any numeric tag type is accepted ({@code getByte} coerces), so a value written as int/byte both
+     * work; a non-numeric tag under the key is treated as absent.
+     */
+    public static boolean isLegendary(ItemStack stack) {
+        if (stack == null || stack.isEmpty()) {
+            return false;
+        }
+        CompoundTag tag = stack.getTag();
+        return tag != null && tag.contains(LEG_TAG, Tag.TAG_ANY_NUMERIC) && tag.getByte(LEG_TAG) != 0;
+    }
+
+    /**
+     * Whether this entity is a legendary drop, e.g. a marked mob/villager spawned by a lucky block.
+     *
+     * <p>A custom tag at the ROOT of an entity's NBT is read-only as far as vanilla persistence goes:
+     * the engine rebuilds the root every save from known keys, so {@code LWLeg} placed there does NOT
+     * necessarily survive a save/load round-trip the way an item tag does. To be robust we check BOTH
+     * places it could realistically live:
+     * <ul>
+     *   <li>the entity's {@link Entity#getPersistentData() forge persistent data} (the supported way
+     *       to attach custom NBT that survives), and</li>
+     *   <li>the freshly serialised NBT ({@code saveWithoutId}), which is what a {@code /summon}
+     *       command's root tag produces on the same tick it spawns.</li>
+     * </ul>
+     * Because the detection scan runs one tick after the spawn (same tick the entity is alive, before
+     * any save), the {@code saveWithoutId} read is the one expected to hit for {@code /summon}-spawned
+     * legendaries. See the implementation report for the persistence caveat.
+     */
+    public static boolean isLegendaryEntity(Entity entity) {
+        if (entity == null) {
+            return false;
+        }
+        // 1) Forge persistent data -- the path that actually survives a save/load round-trip.
+        CompoundTag persistent = entity.getPersistentData();
+        if (persistent.contains(LEG_TAG, Tag.TAG_ANY_NUMERIC) && persistent.getByte(LEG_TAG) != 0) {
+            return true;
+        }
+        // 2) Freshly serialised root NBT -- catches a tag the spawner put at the entity root this tick
+        //    (e.g. /summon ... {LWLeg:1b}), which may not have migrated into persistentData yet.
+        CompoundTag saved = new CompoundTag();
+        try {
+            entity.saveWithoutId(saved);
+        } catch (Throwable ignored) {
+            return false; // some entities may dislike being serialised mid-tick; fail closed
+        }
+        return saved.contains(LEG_TAG, Tag.TAG_ANY_NUMERIC) && saved.getByte(LEG_TAG) != 0;
     }
 }

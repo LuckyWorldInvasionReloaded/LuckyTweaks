@@ -10,6 +10,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.level.BlockEvent;
 import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -38,6 +39,40 @@ public final class BreakEvents {
     /** Bound on luck STORED on an item/block: the Lucky Block mod itself never produces blocks outside
      *  [-100, 100], so anything we write (fusion results...) must stay inside it too. */
     public static final int STORED_LUCK_MAX = 100;
+
+    /**
+     * One-shot guard for the legendary-drop COUNTER, driven from the drop-roll side
+     * ({@code mixin.LegendaryCounterMixin}, which hooks the Lucky Block mod's {@code runEvaluatedDrop}).
+     *
+     * <p>Tri-state, per server thread:
+     * <ul>
+     *   <li>{@code null} — not armed: no real player break is "in flight" this tick, so a legendary
+     *       evaluation must NOT be counted. This is the default and the state restored at the end of
+     *       every server tick, so a DELAYED legendary reveal (the suspense wrap fires the actual drop
+     *       ~44 ticks later, in a LATER tick) is never double-counted.</li>
+     *   <li>{@code FALSE} — armed, not yet counted: a real player just broke a (non-disabled) lucky
+     *       block on THIS tick; the first legendary evaluation seen may count.</li>
+     *   <li>{@code TRUE} — already counted: consumed by the first increment, so any further legendary
+     *       sub-drop in the SAME break (e.g. a multi-legendary roll) does not count again.</li>
+     * </ul>
+     *
+     * <p>Why count at the ROLL and not by scanning spawned entities afterwards: the suspense rework
+     * wraps each legendary sub-drop in {@code group(<sounds+particles>; <item>, delay=2.2)}, so the
+     * item/entity only spawns ~44 ticks after the break — a post-spawn AABB scan would miss it. The
+     * roll, by contrast, happens synchronously on the break tick, before the delay is applied, so the
+     * legendary marker is already visible there regardless of the reveal delay or its position.
+     */
+    public static final ThreadLocal<Boolean> LEGENDARY_COUNTED_THIS_BREAK =
+            ThreadLocal.withInitial(() -> null);
+
+    /**
+     * The curse twin of {@link #LEGENDARY_COUNTED_THIS_BREAK}: the same tri-state one-shot guard, for the
+     * CURSED counter ({@code mixin.CursedCounterMixin}, which keys on the Elder Guardian curse sound at
+     * {@code runEvaluatedDrop}). Armed and reset on exactly the same ticks; a curse and a legendary never
+     * coexist in one drop, so the two guards are fully independent.
+     */
+    public static final ThreadLocal<Boolean> CURSED_COUNTED_THIS_BREAK =
+            ThreadLocal.withInitial(() -> null);
 
     private BreakEvents() {}
 
@@ -104,6 +139,84 @@ public final class BreakEvents {
                 && !(serverPlayer instanceof net.minecraftforge.common.util.FakePlayer)) {
             Integer cl = LuckState.CAPTURED.get();
             LuckyBlockBreakBus.fire(serverPlayer, id, event.getPos(), cl != null ? cl : 0);
+
+            // Arm the legendary counter for THIS break: the drop-roll mixin (LegendaryCounterMixin)
+            // bumps the stat the first time the Lucky Block mod evaluates a drop carrying the LWLeg
+            // marker. FALSE = "armed, not yet counted". Counting at the roll (not by scanning spawned
+            // entities) is what makes it survive the suspense reveal delay -- the marked item/entity
+            // spawns ~44 ticks later, but the roll happens here, synchronously, on the break tick.
+            LEGENDARY_COUNTED_THIS_BREAK.set(Boolean.FALSE);
+            // Arm the cursed counter for THIS break too (its mixin keys on the curse sound at the roll).
+            CURSED_COUNTED_THIS_BREAK.set(Boolean.FALSE);
+        }
+    }
+
+    /**
+     * Count a legendary drop for {@code player}, at most once per break. Called by
+     * {@code mixin.LegendaryCounterMixin} from the Lucky Block mod's drop evaluation when a chosen
+     * sub-drop carries the {@code LWLeg} marker. Guarded by {@link #LEGENDARY_COUNTED_THIS_BREAK}:
+     * <ul>
+     *   <li>only fires while the flag is {@code FALSE} (a real player broke a lucky block on this tick
+     *       and nothing has been counted yet), so a delayed reveal in a later tick -- where the flag
+     *       has been reset to {@code null} at end-of-tick -- never counts;</li>
+     *   <li>consumes the flag to {@code TRUE} on the first hit, so a second legendary sub-drop in the
+     *       same break (multi-legendary roll) is not counted twice.</li>
+     * </ul>
+     */
+    public static void countLegendaryAtRoll(ServerPlayer player) {
+        if (player == null || player instanceof net.minecraftforge.common.util.FakePlayer) {
+            return;
+        }
+        if (!Boolean.FALSE.equals(LEGENDARY_COUNTED_THIS_BREAK.get())) {
+            return; // not armed (null), or already counted this break (TRUE)
+        }
+        LEGENDARY_COUNTED_THIS_BREAK.set(Boolean.TRUE);
+        LegendaryStatsBridge.increment(player);
+    }
+
+    /**
+     * Count a cursed drop for {@code player}, at most once per break. Called by {@code mixin.CursedCounterMixin}
+     * when the Lucky Block mod evaluates our curse-sound sub-drop. Same guard contract as
+     * {@link #countLegendaryAtRoll}: only fires while {@link #CURSED_COUNTED_THIS_BREAK} is {@code FALSE}
+     * (a real player broke a lucky block this tick, nothing counted yet) and consumes it to {@code TRUE},
+     * so a curse with several content sub-drops -- or the sound matched more than once -- counts only once.
+     */
+    public static void countCursedAtRoll(ServerPlayer player) {
+        if (player == null || player instanceof net.minecraftforge.common.util.FakePlayer) {
+            return;
+        }
+        if (!Boolean.FALSE.equals(CURSED_COUNTED_THIS_BREAK.get())) {
+            return; // not armed (null), or already counted this break (TRUE)
+        }
+        CURSED_COUNTED_THIS_BREAK.set(Boolean.TRUE);
+        // Anti-spoiler: DELAY the counter bump by 5 s (100 ticks). The "Cursed drops: N" HUD must NOT tick
+        // up in sync with the bad drop, or the player would know instantly the drop was cursed. Re-resolve
+        // the player by UUID at fire time (if they log off in the interval we simply skip).
+        net.minecraft.server.MinecraftServer server = player.getServer();
+        if (server == null) {
+            return;
+        }
+        java.util.UUID uuid = player.getUUID();
+        com.lwi.luckytweaks.util.ServerScheduler.schedule(100, () -> {
+            ServerPlayer p = server.getPlayerList().getPlayer(uuid);
+            if (p != null) {
+                CursedStatsBridge.increment(p);
+            }
+        });
+    }
+
+    /**
+     * Clear the legendary-counter arming at the end of every server tick. The whole break -> roll
+     * sequence is synchronous within a single tick, so by END it is fully done; resetting to the
+     * unarmed state ({@code null}) here means a DELAYED legendary reveal (fired ~44 ticks later by the
+     * suspense {@code group(...,delay=2.2)} wrap) lands on an unarmed flag and is correctly NOT
+     * counted -- and the arming can never leak onto a later, unrelated tick's break.
+     */
+    @SubscribeEvent
+    public static void onServerTickEnd(TickEvent.ServerTickEvent event) {
+        if (event.phase == TickEvent.Phase.END) {
+            LEGENDARY_COUNTED_THIS_BREAK.set(null);
+            CURSED_COUNTED_THIS_BREAK.set(null);
         }
     }
 }
