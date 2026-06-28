@@ -45,11 +45,29 @@ public final class TweaksConfig {
      */
     public static final ForgeConfigSpec.ConfigValue<List<? extends String>> SPAWN_RULES;
 
-    /** Player-locator bar (multiplayer): other players' directions shown above the XP bar. */
+    /** Player-locator bar (multiplayer): other players' directions shown above the XP bar.
+     *  Faithful reproduction of the "Player Locator Plus" mod (GPL-3.0, sit &lt;me@sit.sh&gt;,
+     *  github.com/timas130/PlayerLocatorPlus). Server pushes each client the relative direction,
+     *  distance and per-player colour of the others; the client draws sprite markers on the XP bar,
+     *  with player heads + name plaques on the Tab (player-list) key. */
     public static final ForgeConfigSpec.BooleanValue LOCATOR_ENABLED;
     public static final ForgeConfigSpec.IntValue LOCATOR_MAX_DISTANCE;
-    public static final ForgeConfigSpec.IntValue LOCATOR_FADE_DISTANCE;
     public static final ForgeConfigSpec.IntValue LOCATOR_UPDATE_TICKS;
+    public static final ForgeConfigSpec.BooleanValue LOCATOR_SEND_DISTANCE;
+    public static final ForgeConfigSpec.IntValue LOCATOR_DIRECTION_PRECISION;
+    // hiding rules (server)
+    public static final ForgeConfigSpec.BooleanValue LOCATOR_SNEAKING_HIDES;
+    public static final ForgeConfigSpec.BooleanValue LOCATOR_INVISIBILITY_HIDES;
+    // style (client)
+    public static final ForgeConfigSpec.BooleanValue LOCATOR_VISIBLE_EMPTY;
+    public static final ForgeConfigSpec.BooleanValue LOCATOR_FADE_MARKERS;
+    public static final ForgeConfigSpec.IntValue LOCATOR_FADE_START;
+    public static final ForgeConfigSpec.IntValue LOCATOR_FADE_END;
+    public static final ForgeConfigSpec.DoubleValue LOCATOR_FADE_END_OPACITY;
+    public static final ForgeConfigSpec.BooleanValue LOCATOR_SHOW_HEIGHT;
+    public static final ForgeConfigSpec.BooleanValue LOCATOR_ALWAYS_SHOW_HEADS;
+    public static final ForgeConfigSpec.BooleanValue LOCATOR_SHOW_HEADS_ON_TAB;
+    public static final ForgeConfigSpec.BooleanValue LOCATOR_SHOW_NAMES_ON_TAB;
 
     private static final List<String> DEFAULT_HARMFUL_MARKERS = List.of(
             "ID=tnt", "lightning_bolt", "ID=lava", "flowing_lava", "type=block,ID=fire", "cobweb", "spawn_egg");
@@ -165,22 +183,63 @@ public final class TweaksConfig {
         builder.push("locator");
         LOCATOR_ENABLED = builder
                 .comment(
-                        "Show a compass-like strip above the XP bar with the direction of nearby players",
-                        "(multiplayer). Centre = ahead, edges = behind; markers fade with distance and are",
-                        "coloured per player. Server-controlled (it pushes positions to clients).",
-                        "WIP and not ready -- OFF by default (its overlay isn't even registered yet).")
-                .define("enabled", false);
+                        "Show a strip of markers above the XP bar pointing at the other players (multiplayer).",
+                        "A marker sits over where that player is on your screen (within your field of view);",
+                        "it fades with distance and is coloured per player. Hold the player-list key (Tab) to",
+                        "raise name plaques and player-head icons above the bar. Server-controlled: it pushes",
+                        "each client the others' relative direction, distance and colour.")
+                .define("enabled", true);
         LOCATOR_MAX_DISTANCE = builder
-                .comment("Maximum horizontal distance (blocks) at which a player shows on the locator bar.",
+                .comment("Maximum distance (blocks) at which a player shows on the locator bar.",
                         "0 = unlimited: every player in the same dimension is tracked.")
                 .defineInRange("maxDistance", 0, 0, 8192);
-        LOCATOR_FADE_DISTANCE = builder
-                .comment("Distance (blocks) over which a marker fades to its faintest. Independent of",
-                        "maxDistance, so fading still works when maxDistance is unlimited (0).")
-                .defineInRange("fadeDistance", 256, 16, 8192);
         LOCATOR_UPDATE_TICKS = builder
-                .comment("How often the server pushes player positions, in ticks (20 = once per second).")
-                .defineInRange("updateTicks", 8, 1, 100);
+                .comment("How often the server pushes player positions, in ticks (20 = once per second).",
+                        "Nearby, loaded players are interpolated smoothly client-side regardless of this;",
+                        "it mainly governs how often far-away players' projected positions refresh.")
+                .defineInRange("updateTicks", 5, 1, 100);
+        LOCATOR_SEND_DISTANCE = builder
+                .comment("Send each player's exact distance along with the direction. Greatly smooths the",
+                        "markers (the client can project a player's position between updates) and enables",
+                        "distance fading. Turn OFF to make triangulating another player's coordinates harder.")
+                .define("sendDistance", true);
+        LOCATOR_DIRECTION_PRECISION = builder
+                .comment("How precisely a far player's direction is sent (the direction vector is rounded to",
+                        "this many steps). Lower = coarser = harder for others to triangulate your position.")
+                .defineInRange("directionPrecision", 300, 2, 100000);
+        LOCATOR_SNEAKING_HIDES = builder
+                .comment("A sneaking (crouching) player is hidden from everyone's locator bar.")
+                .define("sneakingHides", true);
+        LOCATOR_INVISIBILITY_HIDES = builder
+                .comment("A player under the Invisibility effect is hidden from the locator bar.")
+                .define("invisibilityHides", true);
+        LOCATOR_VISIBLE_EMPTY = builder
+                .comment("Show the empty bar background even when no other players are tracked.")
+                .define("visibleEmpty", false);
+        LOCATOR_FADE_MARKERS = builder
+                .comment("Fade a marker's opacity as the player gets farther away (needs sendDistance).")
+                .define("fadeMarkers", true);
+        LOCATOR_FADE_START = builder
+                .comment("Distance (blocks) at which markers start to fade.")
+                .defineInRange("fadeStart", 100, 0, 8192);
+        LOCATOR_FADE_END = builder
+                .comment("Distance (blocks) at which markers reach their faintest (fadeEndOpacity).")
+                .defineInRange("fadeEnd", 1000, 1, 8192);
+        LOCATOR_FADE_END_OPACITY = builder
+                .comment("Faintest marker opacity, 0 (invisible) to 1 (opaque), reached at fadeEnd.")
+                .defineInRange("fadeEndOpacity", 0.3, 0.0, 1.0);
+        LOCATOR_SHOW_HEIGHT = builder
+                .comment("Draw a small up/down arrow by a marker when that player is well above or below you.")
+                .define("showHeight", true);
+        LOCATOR_ALWAYS_SHOW_HEADS = builder
+                .comment("Always draw player-head icons on the markers instead of plain coloured pins.")
+                .define("alwaysShowHeads", false);
+        LOCATOR_SHOW_HEADS_ON_TAB = builder
+                .comment("Draw player-head icons on the markers while the player-list key (Tab) is held.")
+                .define("showHeadsOnTab", true);
+        LOCATOR_SHOW_NAMES_ON_TAB = builder
+                .comment("Raise name plaques above the bar (lifting the HUD) while the player-list key is held.")
+                .define("showNamesOnTab", true);
         builder.pop();
 
         COMMON_SPEC = builder.build();

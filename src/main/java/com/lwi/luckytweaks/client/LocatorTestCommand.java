@@ -13,9 +13,8 @@ import net.minecraftforge.fml.common.Mod;
  * the overlay can be eyeballed in singleplayer (colour per player, distance fade, bearing vs. yaw).
  * Forge event bus (client commands are registered there), client dist only.
  */
-// Player Locator is WIP and not ready: the /lwlocatortest dev command is NOT registered for 1.2.14.
-// The class is kept for a future release -- un-comment the annotation below to re-enable it.
-// @Mod.EventBusSubscriber(modid = LuckyTweaksMod.MODID, value = Dist.CLIENT)
+// Player Locator (WIP, re-enabled for dev): the /lwlocatortest dev command is registered again.
+@Mod.EventBusSubscriber(modid = LuckyTweaksMod.MODID, value = Dist.CLIENT)
 public final class LocatorTestCommand {
     private LocatorTestCommand() {}
 

@@ -39,8 +39,7 @@ public final class LuckyTweaksClient {
 
     @SubscribeEvent
     public static void onRegisterOverlays(RegisterGuiOverlaysEvent event) {
-        // Player Locator is WIP and NOT ready -- its overlay is deliberately not registered (kept in code
-        // for a future release). With no overlay registered, nothing the locator does is ever shown.
-        // event.registerAbove(VanillaGuiOverlay.EXPERIENCE_BAR.id(), "player_locator", LocatorOverlay.INSTANCE);
+        // Player Locator (WIP, re-enabled for dev): overlay registered above the XP bar.
+        event.registerAbove(VanillaGuiOverlay.EXPERIENCE_BAR.id(), "player_locator", LocatorOverlay.INSTANCE);
     }
 }
