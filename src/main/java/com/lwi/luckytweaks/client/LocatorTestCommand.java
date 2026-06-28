@@ -4,6 +4,7 @@ import com.lwi.luckytweaks.LuckyTweaksMod;
 import com.mojang.brigadier.Command;
 import net.minecraft.commands.Commands;
 import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.client.event.ClientPlayerNetworkEvent;
 import net.minecraftforge.client.event.RegisterClientCommandsEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -25,5 +26,12 @@ public final class LocatorTestCommand {
                     LocatorOverlay.toggleTest();
                     return Command.SINGLE_SUCCESS;
                 }));
+    }
+
+    /** Wipe the locator's tracked state when leaving a world, so a previous session's markers (and any
+     *  active test mode) never bleed into the next world. */
+    @SubscribeEvent
+    public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
+        LocatorOverlay.reset();
     }
 }

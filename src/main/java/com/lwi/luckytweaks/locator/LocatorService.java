@@ -14,19 +14,25 @@ import net.minecraftforge.network.PacketDistributor;
 import net.minecraftforge.server.ServerLifecycleHooks;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
 import java.util.UUID;
 
 /**
  * Server side: every {@code updateTicks}, send each player the in-dimension, in-radius positions of the
- * other players as a relative direction + distance + colour (see {@link PlayerPositionsPacket}). An
- * empty packet is still sent so a client whose targets all left clears its bar. Players who are
- * sneaking / invisible / spectating are filtered out per config.
+ * other players as a relative direction + distance + colour (see {@link PlayerPositionsPacket}). When a
+ * player's last trackable target disappears (the other player leaves, changes dimension, goes out of
+ * range or hides), one empty packet is sent to clear that player's bar -- so a lone player (solo world,
+ * or everyone else gone) shows nothing at all, and no packets are sent to players who never had any.
+ * Players who are sneaking / invisible / spectating are filtered out per config.
  */
 @Mod.EventBusSubscriber(modid = LuckyTweaksMod.MODID)
 public final class LocatorService {
     private static int tickCounter;
+    /** UUIDs of players who currently have at least one marker, so we can clear a bar exactly once. */
+    private static Set<UUID> hadMarkers = new HashSet<>();
 
     private LocatorService() {}
 
@@ -43,10 +49,9 @@ public final class LocatorService {
         boolean sendDistance = TweaksConfig.LOCATOR_SEND_DISTANCE.get();
         float precision = TweaksConfig.LOCATOR_DIRECTION_PRECISION.get();
 
+        Set<UUID> withMarkers = new HashSet<>();
         for (ServerLevel level : server.getAllLevels()) {
             List<ServerPlayer> players = level.players();
-            if (players.size() < 2) continue;
-
             for (ServerPlayer self : players) {
                 List<PlayerPositionsPacket.Entry> entries = new ArrayList<>();
                 for (ServerPlayer other : players) {
@@ -72,10 +77,19 @@ public final class LocatorService {
                             id.getMostSignificantBits(), id.getLeastSignificantBits(),
                             dx, dy, dz, distance, colorFor(id)));
                 }
-                LocatorNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(() -> self),
-                        new PlayerPositionsPacket(entries));
+                UUID selfId = self.getUUID();
+                if (!entries.isEmpty()) {
+                    LocatorNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(() -> self),
+                            new PlayerPositionsPacket(entries));
+                    withMarkers.add(selfId);
+                } else if (hadMarkers.contains(selfId)) {
+                    // just lost the last trackable target -> clear this player's bar exactly once
+                    LocatorNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(() -> self),
+                            new PlayerPositionsPacket(List.of()));
+                }
             }
         }
+        hadMarkers = withMarkers;
     }
 
     /** A player is kept off everyone's bar when sneaking / invisible / spectating. */

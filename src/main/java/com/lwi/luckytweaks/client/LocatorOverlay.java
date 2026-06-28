@@ -74,6 +74,15 @@ public final class LocatorOverlay implements IGuiOverlay {
         lastUpdatePosition = mc.player != null ? mc.player.position() : Vec3.ZERO;
     }
 
+    /** Clear all tracked state -- called when leaving a world so markers from a previous (multiplayer)
+     *  session never carry over into the next one (e.g. a solo world, which would otherwise show them). */
+    public static void reset() {
+        entries = List.of();
+        lastUpdatePosition = Vec3.ZERO;
+        testMode = false;
+        testEntries = List.of();
+    }
+
     /** Lift applied to the rest of the HUD while the name plaques are showing. Read by {@link LocatorHudOffset}. */
     public static float currentHudOffset() {
         return hudOffset.currentValue;
