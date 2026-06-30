@@ -52,6 +52,10 @@ repositories {
         name = 'BlameJared'
         url = 'https://maven.blamejared.com/'
     }
+    maven {
+        // Curios API (Kitty Slippers compat reads a player's worn slippers). Ships with the modpack at runtime.
+        url = 'https://maven.theillusivec4.top/'
+    }
 }
 
 dependencies {
@@ -71,6 +75,11 @@ dependencies {
     // Lucky Stats' public API (per-player save data + the stats screen). Soft dependency -- every
     // call site is guarded by ModList.isLoaded("luckystats"), so Lucky Tweaks runs fine without it.
     compileOnly files('libs/luckystats-1.0.0.jar')
+
+    // Curios API, compile-only (NOT bundled): the Kitty Slippers compatibility shim reads whether a nearby
+    // player is wearing Artifacts' Kitty Slippers. Soft dependency -- KittySlippersCompat is gated on Curios
+    // being loaded, and the only CuriosApi reference lives in KittySlippersCuriosBridge.
+    compileOnly fg.deobf("top.theillusivec4.curios:curios-forge:${curios_version}:api")
 }
 
 tasks.named('processResources', ProcessResources).configure {

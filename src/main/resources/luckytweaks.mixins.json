@@ -11,7 +11,9 @@
     "LuckyWorldGenMixin",
     "CrocodileSwallowMixin",
     "ReviveDisableMixin",
-    "EnhancedAiOpenDoorsMixin"
+    "EnhancedAiOpenDoorsMixin",
+    "EaiCreeperSwellSlippersMixin",
+    "EaiCreeperLaunchSlippersMixin"
   ],
   "client": [
     "BrandingMixin",
