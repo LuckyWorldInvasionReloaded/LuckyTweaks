@@ -13,7 +13,8 @@
     "ReviveDisableMixin",
     "EnhancedAiOpenDoorsMixin",
     "EaiCreeperSwellSlippersMixin",
-    "EaiCreeperLaunchSlippersMixin"
+    "EaiCreeperLaunchSlippersMixin",
+    "MinecraftServerStorageAccessor"
   ],
   "client": [
     "BrandingMixin",
