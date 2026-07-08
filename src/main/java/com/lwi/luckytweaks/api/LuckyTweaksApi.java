@@ -1,6 +1,7 @@
 package com.lwi.luckytweaks.api;
 
 import com.lwi.luckytweaks.DebugReport;
+import com.lwi.luckytweaks.LegendaryDropBus;
 import com.lwi.luckytweaks.LuckCaps;
 import com.lwi.luckytweaks.LuckState;
 import com.lwi.luckytweaks.LuckyBlockBreakBus;
@@ -95,6 +96,17 @@ public final class LuckyTweaksApi {
      */
     public static void registerBreakListener(LuckyBlockBreakListener listener) {
         LuckyBlockBreakBus.register(listener);
+    }
+
+    /**
+     * Register a {@link LegendaryDropListener}, notified at most once per break when the drop the
+     * Lucky Block mod actually rolled is a legendary one. It fires from the drop evaluation, on the
+     * same tick as the break -- i.e. strictly AFTER {@link #registerBreakListener}'s callback, which
+     * runs before the roll and therefore cannot know the outcome. Listeners must not throw; exceptions
+     * are swallowed so the drop pipeline is never broken. Added for Lucky XP (double XP on a legendary).
+     */
+    public static void registerLegendaryDropListener(LegendaryDropListener listener) {
+        LegendaryDropBus.register(listener);
     }
 
     /**

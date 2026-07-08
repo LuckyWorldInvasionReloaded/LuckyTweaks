@@ -65,6 +65,10 @@ public final class BreakEvents {
     public static final ThreadLocal<Boolean> LEGENDARY_COUNTED_THIS_BREAK =
             ThreadLocal.withInitial(() -> null);
 
+    /** Position of the lucky block broken on THIS tick, so the drop roll can tell listeners where it
+     *  happened. Armed alongside the guards above, cleared with them at end-of-tick. */
+    public static final ThreadLocal<BlockPos> BREAK_POS = ThreadLocal.withInitial(() -> null);
+
     /**
      * The curse twin of {@link #LEGENDARY_COUNTED_THIS_BREAK}: the same tri-state one-shot guard, for the
      * CURSED counter ({@code mixin.CursedCounterMixin}, which keys on the Elder Guardian curse sound at
@@ -148,6 +152,9 @@ public final class BreakEvents {
             LEGENDARY_COUNTED_THIS_BREAK.set(Boolean.FALSE);
             // Arm the cursed counter for THIS break too (its mixin keys on the curse sound at the roll).
             CURSED_COUNTED_THIS_BREAK.set(Boolean.FALSE);
+            // Remember where, so LegendaryDropBus listeners get a position: the roll knows the player
+            // but not the block. Cleared with the guards at end-of-tick.
+            BREAK_POS.set(event.getPos());
         }
     }
 
@@ -172,6 +179,9 @@ public final class BreakEvents {
         }
         LEGENDARY_COUNTED_THIS_BREAK.set(Boolean.TRUE);
         LegendaryStatsBridge.increment(player);
+        // Same one-shot guard, so external listeners (Lucky XP's legendary bonus) also see exactly one
+        // event per break. Fired after the stat, still synchronously on the break tick.
+        LegendaryDropBus.fire(player, BREAK_POS.get());
     }
 
     /**
@@ -217,6 +227,7 @@ public final class BreakEvents {
         if (event.phase == TickEvent.Phase.END) {
             LEGENDARY_COUNTED_THIS_BREAK.set(null);
             CURSED_COUNTED_THIS_BREAK.set(null);
+            BREAK_POS.set(null);
         }
     }
 }
