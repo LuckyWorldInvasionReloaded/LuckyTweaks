@@ -30,6 +30,9 @@ public final class TweaksConfig {
      *  (see {@link CrocodileSwallow}). */
     public static final ForgeConfigSpec.BooleanValue FIX_CROCODILE;
 
+    /** How many Yakurum Sacred Hearts a player may ever eat, 0 = uncapped (see {@link SacredHeartCap}). */
+    public static final ForgeConfigSpec.IntValue SACRED_HEART_MAX_USES;
+
     /** Master switch for the optional PlayerRevive co-op revive (see
      *  {@link com.lwi.luckytweaks.mixin.ReviveDisableMixin}). */
     public static final ForgeConfigSpec.BooleanValue ENABLE_PLAYER_REVIVE;
@@ -166,6 +169,20 @@ public final class TweaksConfig {
                         "killed, so you just have to kill it to get your gear back. Does nothing when Fuze",
                         "Relics isn't installed. Default ON.")
                 .define("fixCrocodile", true);
+        builder.pop();
+
+        builder.push("sacredHeart");
+        SACRED_HEART_MAX_USES = builder
+                .comment(
+                        "How many Yakurum Sacred Hearts a player may ever eat. Each one permanently adds",
+                        "2 max-health points (one heart) to the attribute's base value, and Yakurum caps",
+                        "nothing -- so the vending machines would let a player farm an unbounded health bar.",
+                        "This counts USES OF THE ITEM, not hearts: every other source of extra health works",
+                        "through attribute modifiers (Artifacts' Crystal Heart, Health Boost, ...) and is",
+                        "left completely alone. Eating one past the cap still grants its Regeneration IV,",
+                        "it just no longer grows the bar. The counter resets on death whenever Yakurum's own",
+                        "hearts do (i.e. when keepInventory is off). Set to 0 to remove the cap. Default 10.")
+                .defineInRange("maxUses", 10, 0, 1000);
         builder.pop();
 
         builder.push("playerRevive");
