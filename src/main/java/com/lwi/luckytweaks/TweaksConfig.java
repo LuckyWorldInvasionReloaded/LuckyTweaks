@@ -37,6 +37,10 @@ public final class TweaksConfig {
      *  {@link com.lwi.luckytweaks.mixin.ReviveDisableMixin}). */
     public static final ForgeConfigSpec.BooleanValue ENABLE_PLAYER_REVIVE;
 
+    /** The run's shared pool of lives — the pack's difficulty dial (see {@link SharedLives}). */
+    public static final ForgeConfigSpec.IntValue SHARED_LIVES_SOLO;
+    public static final ForgeConfigSpec.IntValue SHARED_LIVES_MULTIPLAYER;
+
     /** Lucky blocks switched off by the pack (see {@link DisabledBlocks}). */
     public static final ForgeConfigSpec.ConfigValue<List<? extends String>> DISABLED_LUCKY_BLOCKS;
 
@@ -189,12 +193,34 @@ public final class TweaksConfig {
         ENABLE_PLAYER_REVIVE = builder
                 .comment(
                         "Let the optional PlayerRevive mod work: a player who would die instead drops into a",
-                        "'bleeding' state for a teammate to revive, rather than dying outright. Meant for",
-                        "multiplayer co-op. When OFF (default), players die normally even with PlayerRevive",
-                        "installed -- Lucky Tweaks forces the death through (only when PlayerRevive actually",
-                        "downed the player, so Totems of Undying are left alone), keeping the pack hardcore by",
-                        "default. Does nothing when PlayerRevive isn't installed. Default OFF.")
-                .define("enablePlayerRevive", false);
+                        "'downed' state a team-mate must come and undo, rather than dying outright.",
+                        "ON by default, and that costs singleplayer nothing: PlayerRevive only ever arms itself",
+                        "when the world is published (a dedicated server, or a world opened to LAN), so a solo run",
+                        "still dies the plain hardcore way. Going down spends one of the run's shared lives",
+                        "(see the [lives] section); giving up costs your items instead of a second life.",
+                        "Turn it OFF to force the death through even in multiplayer. Does nothing when",
+                        "PlayerRevive isn't installed. Default ON.")
+                .define("enablePlayerRevive", true);
+        builder.pop();
+
+        builder.push("lives");
+        SHARED_LIVES_SOLO = builder
+                .comment(
+                        "How many lives the run has when played alone. The pool is SHARED by the team and never",
+                        "refills: every death spends one, and the death that empties it ends the run for good.",
+                        "At 1 (default) the very first death is final -- the pack as it is meant to be played.",
+                        "Raise it to make a run more forgiving; this is the difficulty dial, rather than a switch",
+                        "that would turn hardcore off and take the pack's whole point with it.")
+                .defineInRange("sharedLivesSolo", 1, 1, 100);
+        SHARED_LIVES_MULTIPLAYER = builder
+                .comment(
+                        "How many lives the run has once the world is a multiplayer one (a dedicated server, or a",
+                        "singleplayer world opened to LAN). Three by default: co-op is harder, and PlayerRevive",
+                        "turns a death into a knock-down that a team-mate must come and undo.",
+                        "Going down spends a life even if you are revived; giving up costs your items, not a life.",
+                        "Only the ALLOWANCE depends on this -- lives already spent are remembered, so inviting a",
+                        "friend mid-run widens the pool instead of stranding it on the singleplayer value.")
+                .defineInRange("sharedLivesMultiplayer", 3, 1, 100);
         builder.pop();
 
         builder.push("locator");

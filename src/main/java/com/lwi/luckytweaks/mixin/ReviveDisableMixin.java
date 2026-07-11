@@ -1,5 +1,6 @@
 package com.lwi.luckytweaks.mixin;
 
+import com.lwi.luckytweaks.SharedLives;
 import com.lwi.luckytweaks.TweaksConfig;
 import net.minecraft.world.entity.Entity;
 import org.spongepowered.asm.mixin.Mixin;
@@ -31,7 +32,9 @@ public class ReviveDisableMixin {
             require = 0
     )
     private static void luckytweaks$disableRevive(Entity player, CallbackInfoReturnable<Boolean> cir) {
-        if (!TweaksConfig.ENABLE_PLAYER_REVIVE.get()) {
+        // Second case: a team wipe is being executed (the shared pool just ran dry). PlayerRevive must not
+        // catch those deaths and knock everyone down instead of letting the run end.
+        if (!TweaksConfig.ENABLE_PLAYER_REVIVE.get() || SharedLives.isGameOver()) {
             cir.setReturnValue(false);
         }
     }

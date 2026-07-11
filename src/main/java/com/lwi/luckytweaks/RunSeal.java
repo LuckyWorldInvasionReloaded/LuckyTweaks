@@ -89,7 +89,12 @@ public final class RunSeal {
                 || !TweaksConfig.ENABLE_LUCK_FUSION.get()
                 || TweaksConfig.LUCKY_BLOCK_SPAWN_MULTIPLIER.get() != 1.0
                 || !TweaksConfig.DISABLED_LUCKY_BLOCKS.get().isEmpty()
-                || !TweaksConfig.SPAWN_RULES.get().isEmpty();
+                || !TweaksConfig.SPAWN_RULES.get().isEmpty()
+                // The lives pool is the difficulty dial: extra lives = not the intended run. The revive
+                // toggle is deliberately NOT checked -- its default flipped false->true, and old worlds
+                // keep the stale false in their toml; tainting them all for our own default bump is unfair.
+                || TweaksConfig.SHARED_LIVES_SOLO.get() != 1
+                || TweaksConfig.SHARED_LIVES_MULTIPLAYER.get() != 3;
     }
 
     /** Human-readable reasons for a tainted seal (rendered on the Lucky Stats screen). */

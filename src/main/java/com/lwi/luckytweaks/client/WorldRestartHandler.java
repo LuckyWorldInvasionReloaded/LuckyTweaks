@@ -42,6 +42,10 @@ public final class WorldRestartHandler {
         if (mc.getSingleplayerServer() == null || mc.level == null || !mc.level.getLevelData().isHardcore()) {
             return;
         }
+        // Never while friends are connected (LAN/e4mc): one click from the host would wipe THEIR run too.
+        if (mc.getSingleplayerServer().isPublished() && mc.getSingleplayerServer().getPlayerCount() > 1) {
+            return;
+        }
         int x = deathScreen.width / 2 - 100;
         int y = deathScreen.height / 4 + 120; // below OSH's spectate (+72) and delete-to-title (+96) buttons
         Button button = Button.builder(Component.literal("Delete & Restart"), b -> WorldRestart.deleteAndRestart(mc))
