@@ -45,8 +45,10 @@ public final class LuckyTweaksMod {
 
     public LuckyTweaksMod() {
         ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, TweaksConfig.COMMON_SPEC);
+        ModLoadingContext.get().registerConfig(ModConfig.Type.CLIENT, TweaksClientConfig.CLIENT_SPEC);
         RECIPE_SERIALIZERS.register(FMLJavaModLoadingContext.get().getModEventBus());
         com.lwi.luckytweaks.locator.LocatorNetwork.init();
+        com.lwi.luckytweaks.net.SharedLivesNet.init();
         LOGGER.info("Lucky Tweaks loaded.");
     }
 }

@@ -10,10 +10,14 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
+import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
+
+import com.lwi.luckytweaks.net.SharedLivesNet;
 
 import java.util.List;
 import java.util.Optional;
@@ -51,7 +55,56 @@ public final class SharedLivesEvents {
 
     private static final ResourceLocation BLED_TO_DEATH = new ResourceLocation("playerrevive", "bled_to_death");
 
+    // Last pool state pushed to clients, so a periodic tick can re-broadcast only on a real change.
+    private static int lastMax = -1;
+    private static int lastRemaining = -1;
+
     private SharedLivesEvents() {}
+
+    /**
+     * Re-sync the hearts HUD when the pool changes for a reason that isn't a death: opening the world to
+     * LAN (allowance jumps solo->multiplayer via {@code isPublished()}) or editing the lives count in the
+     * config. Both change {@code maxLives}/{@code remaining} with no packet otherwise; this cheap
+     * once-a-second check pushes an update only when the value actually moved.
+     */
+    @SubscribeEvent
+    public static void onServerTick(TickEvent.ServerTickEvent event) {
+        if (event.phase != TickEvent.Phase.END) {
+            return;
+        }
+        MinecraftServer server = event.getServer();
+        if (server == null || server.getTickCount() % 20 != 0) {
+            return;
+        }
+        int max = SharedLives.maxLives(server);
+        int remaining = SharedLives.remaining(server);
+        if (max != lastMax || remaining != lastRemaining) {
+            lastMax = max;
+            lastRemaining = remaining;
+            SharedLivesNet.broadcast(server);
+        }
+    }
+
+    /** Sync the pool to a joining player, and show the one-time "designed for hardcore, adjustable" line. */
+    @SubscribeEvent
+    public static void onLogin(PlayerEvent.PlayerLoggedInEvent event) {
+        if (!(event.getEntity() instanceof ServerPlayer player)) {
+            return;
+        }
+        MinecraftServer server = player.getServer();
+        if (server == null) {
+            return;
+        }
+        SharedLivesNet.sendTo(player);
+        SharedLives data = SharedLives.get(server);
+        if (!data.hasWelcomed()) {
+            data.setWelcomed();
+            player.displayClientMessage(Component.literal(
+                            "You have a single life — three shared lives in multiplayer. The modpack is built to be "
+                                    + "played this way, but you can adjust it in Mods > Lucky Tweaks.")
+                    .withStyle(ChatFormatting.GOLD), false);
+        }
+    }
 
     // HIGH, not LOWEST: PlayerRevive cancels at HIGHEST (receiveCanceled lets us see that), and OUR
     // cancel must land before every other death listener — Old School Hardcore marks its persistent
@@ -86,6 +139,7 @@ public final class SharedLivesEvents {
     /** PlayerRevive downed the player: the fall itself is what costs the team a life. */
     private static void onDowned(MinecraftServer server, ServerPlayer player) {
         int left = SharedLives.consume(server);
+        SharedLivesNet.broadcast(server);               // refresh the hearts HUD for everyone
         if (left <= 0) {
             broadcast(server, player.getScoreboardName() + " went down with no lives left.", ChatFormatting.DARK_RED);
             teamGameOver(server, null);
@@ -116,6 +170,7 @@ public final class SharedLivesEvents {
     /** No downing happened: singleplayer, or a damage source PlayerRevive bypasses. */
     private static void onPlainDeath(LivingDeathEvent event, MinecraftServer server, ServerPlayer player) {
         int left = SharedLives.consume(server);
+        SharedLivesNet.broadcast(server);               // refresh the hearts HUD for everyone
         if (left <= 0) {
             // Let this death stand — hardcore turns it into a Game Over — and take the rest down with it.
             broadcast(server, "No lives left. The run is over.", ChatFormatting.DARK_RED);

@@ -28,6 +28,7 @@ public class SharedLives extends SavedData {
     private static volatile boolean gameOver = false;
 
     private int used;
+    private boolean welcomed;
 
     public static SharedLives get(MinecraftServer server) {
         ServerLevel overworld = server.overworld();
@@ -37,13 +38,25 @@ public class SharedLives extends SavedData {
     private static SharedLives load(CompoundTag tag) {
         SharedLives data = new SharedLives();
         data.used = tag.getInt("used");
+        data.welcomed = tag.getBoolean("welcomed");
         return data;
     }
 
     @Override
     public CompoundTag save(CompoundTag tag) {
         tag.putInt("used", used);
+        tag.putBoolean("welcomed", welcomed);
         return tag;
+    }
+
+    /** Whether the one-time "designed for hardcore, adjustable" welcome line has already been shown. */
+    public boolean hasWelcomed() {
+        return welcomed;
+    }
+
+    public void setWelcomed() {
+        this.welcomed = true;
+        setDirty();
     }
 
     /**

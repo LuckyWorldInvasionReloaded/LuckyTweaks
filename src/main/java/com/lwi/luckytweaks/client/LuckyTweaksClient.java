@@ -41,5 +41,7 @@ public final class LuckyTweaksClient {
     public static void onRegisterOverlays(RegisterGuiOverlaysEvent event) {
         // Player Locator (WIP, re-enabled for dev): overlay registered above the XP bar.
         event.registerAbove(VanillaGuiOverlay.EXPERIENCE_BAR.id(), "player_locator", LocatorOverlay.INSTANCE);
+        // Shared-lives hearts, top-centre.
+        event.registerAbove(VanillaGuiOverlay.BOSS_EVENT_PROGRESS.id(), "shared_lives", SharedLivesHud.INSTANCE);
     }
 }

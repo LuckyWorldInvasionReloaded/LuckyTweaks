@@ -46,6 +46,7 @@ public final class SharedLivesCommand {
     private static int setUsed(CommandSourceStack src, int used) {
         MinecraftServer server = src.getServer();
         SharedLives.setUsed(server, used);
+        com.lwi.luckytweaks.net.SharedLivesNet.broadcast(server);   // refresh the hearts HUD
         return status(src);
     }
 }
