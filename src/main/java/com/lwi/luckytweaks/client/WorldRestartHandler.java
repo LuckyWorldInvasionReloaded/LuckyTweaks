@@ -42,8 +42,14 @@ public final class WorldRestartHandler {
         if (mc.getSingleplayerServer() == null || mc.level == null || !mc.level.getLevelData().isHardcore()) {
             return;
         }
-        // Never while friends are connected (LAN/e4mc): one click from the host would wipe THEIR run too.
-        if (mc.getSingleplayerServer().isPublished() && mc.getSingleplayerServer().getPlayerCount() > 1) {
+        // With friends connected (LAN/e4mc), the host only reaches this hardcore death screen when the
+        // WHOLE team is out of shared lives — the shared-lives game-over kills everyone at once, so no
+        // one is still playing and a restart wipes nothing in progress. So the button is fine here as
+        // long as the shared-lives rule is actually active (max > 0). If it's off, keep the old guard:
+        // hide it in multiplayer so a stray click can't wipe a friend's still-running world.
+        boolean sharedLivesActive = SharedLivesHud.max() > 0;
+        if (mc.getSingleplayerServer().isPublished() && mc.getSingleplayerServer().getPlayerCount() > 1
+                && !sharedLivesActive) {
             return;
         }
         int x = deathScreen.width / 2 - 100;

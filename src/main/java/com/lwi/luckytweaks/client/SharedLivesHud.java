@@ -36,6 +36,17 @@ public final class SharedLivesHud implements IGuiOverlay {
         max = mx;
     }
 
+    /** Team allowance last synced from the server: >0 means the shared-lives rule is active (synced on
+     *  login, so reliable at any time — unlike {@link #remaining}, which lands with the death itself). */
+    public static int max() {
+        return max;
+    }
+
+    /** Team lives left: -1 = unsynced, 0 = out (game over), &gt;0 = lives remain. */
+    public static int remaining() {
+        return remaining;
+    }
+
     /** Draw {@code count} of {@code total} hearts of {@code style} at (x,y). Shared with the config preview. */
     public static void drawRow(GuiGraphics g, int x, int y, int total, int count, String style) {
         int fullU = LivesHeartStyles.column(style) * HEART;
