@@ -65,7 +65,12 @@ public final class WorldRestartHandler {
 
     @SubscribeEvent
     public static void onClientTick(TickEvent.ClientTickEvent event) {
-        if (event.phase != TickEvent.Phase.END || restartButton == null) {
+        if (event.phase != TickEvent.Phase.END) {
+            return;
+        }
+        // Runs while no death screen is open: the fresh world comes up long after the button is gone.
+        WorldRestart.tickReshare(Minecraft.getInstance());
+        if (restartButton == null) {
             return;
         }
         // Forget the button once the death screen is gone (respawn / spectate / title).

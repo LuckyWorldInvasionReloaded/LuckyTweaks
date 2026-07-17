@@ -36,7 +36,7 @@ public final class SharedLivesCommand {
         MinecraftServer server = src.getServer();
         int left = SharedLives.remaining(server);
         int max = SharedLives.maxLives(server);
-        String mode = server.isPublished() ? "multiplayer" : "singleplayer";
+        String mode = SharedLives.isMultiplayerRun(server) ? "multiplayer" : "singleplayer";
         src.sendSuccess(() -> Component.literal(
                         left + "/" + max + " shared lives left (" + mode + " allowance)")
                 .withStyle(ChatFormatting.GOLD), false);

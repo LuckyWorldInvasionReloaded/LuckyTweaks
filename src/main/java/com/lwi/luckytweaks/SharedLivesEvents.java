@@ -9,7 +9,10 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
@@ -33,10 +36,13 @@ import java.util.Optional;
  * <ul>
  *   <li><b>Cancelled + downed flag</b> — PlayerRevive just knocked the player down (the flag is written
  *       by {@code startBleeding} before the cancel). Costs the life. Cancelled WITHOUT the flag means
- *       some other mod saved this death for its own reasons — we stand aside entirely. Totems never
- *       show up here at all: they act earlier ({@code LivingDamageEvent} for TotemBeforePlayerRevive,
- *       vanilla's {@code checkTotemDeathProtection} for Yakurum's resurrection and pandilla totem), so a
- *       totem or a resurrection <b>never costs a life</b> — the event simply never fires.</li>
+ *       some other mod saved this death for its own reasons — we stand aside entirely. Almost every totem
+ *       acts earlier and never shows up here at all ({@code LivingDamageEvent} for TotemBeforePlayerRevive,
+ *       vanilla's {@code checkTotemDeathProtection} for Yakurum's resurrection and pandilla totem, and
+ *       Artifacts' Chorus Totem injects at its head), so a totem or a resurrection <b>never costs a life</b>
+ *       — the event simply never fires. The one exception is Born in Chaos' Death Totem, which saves from a
+ *       NORMAL listener, i.e. after us: see {@link #mayBeSavedByDeathTotem} and
+ *       {@link #onDeathAfterDeathTotem}.</li>
  *   <li><b>Uncancelled + downed flag</b> — a downed player actually dying: gave up, disconnected while
  *       down, or was finished by a bypassed source (the void). The life was already spent at the fall,
  *       so this only costs their <b>items</b>; we also clear the bleeding state, which PlayerRevive's own
@@ -62,10 +68,11 @@ public final class SharedLivesEvents {
     private SharedLivesEvents() {}
 
     /**
-     * Re-sync the hearts HUD when the pool changes for a reason that isn't a death: opening the world to
-     * LAN (allowance jumps solo->multiplayer via {@code isPublished()}) or editing the lives count in the
-     * config. Both change {@code maxLives}/{@code remaining} with no packet otherwise; this cheap
-     * once-a-second check pushes an update only when the value actually moved.
+     * Latch the run as multiplayer once two players are online together, and re-sync the hearts HUD when
+     * the pool changes for a reason that isn't a death: that very latch (the allowance jumps
+     * solo->multiplayer) or editing the lives count in the config. Both change {@code maxLives}/
+     * {@code remaining} with no packet otherwise; this cheap once-a-second check pushes an update only
+     * when the value actually moved.
      */
     @SubscribeEvent
     public static void onServerTick(TickEvent.ServerTickEvent event) {
@@ -76,6 +83,7 @@ public final class SharedLivesEvents {
         if (server == null || server.getTickCount() % 20 != 0) {
             return;
         }
+        SharedLives.noteHeadcount(server);
         int max = SharedLives.maxLives(server);
         int remaining = SharedLives.remaining(server);
         if (max != lastMax || remaining != lastRemaining) {
@@ -123,6 +131,7 @@ public final class SharedLivesEvents {
             return;
         }
 
+        deferredToDeathTotem = null;                 // this death gets its own verdict
         boolean downed = PlayerReviveCompat.isDowned(player);
         if (event.isCanceled()) {
             if (downed) {
@@ -131,9 +140,66 @@ public final class SharedLivesEvents {
             // cancelled without the downed flag: some OTHER mod saved this death — not ours to touch
         } else if (downed || isBledToDeath(event.getSource())) {
             onDownedDeath(event, player);
+        } else if (mayBeSavedByDeathTotem(player)) {
+            deferredToDeathTotem = player;           // let Born in Chaos try at NORMAL; settled at LOW
         } else {
             onPlainDeath(event, server, player);
         }
+    }
+
+    /**
+     * The player whose death {@link #onDeath} handed over to Born in Chaos' Death Totem, consumed by
+     * {@link #onDeathAfterDeathTotem} in the same synchronous dispatch.
+     *
+     * <p>Explicit state rather than re-checking the inventory at LOW: the totem's own listener SHRINKS the
+     * stack when it fires, so a second look would report "no totem" and skip a death that still needs
+     * settling -- no life spent, no respawn, no game over. Deaths are dispatched one at a time on the
+     * server thread, and LOW receives cancelled events too, so this is always set and cleared in pairs.
+     */
+    private static ServerPlayer deferredToDeathTotem;
+
+    /** Born in Chaos' Death Totem, the one death-protection item that saves from a LivingDeathEvent listener. */
+    private static final ResourceLocation DEATH_TOTEM = new ResourceLocation("born_in_chaos_v1", "death_totem");
+
+    /**
+     * Whether Born in Chaos' Death Totem could still save this death.
+     *
+     * <p>Every other totem in the pack (vanilla, Artifacts' Chorus Totem, Yakurum's pandilla totem and its
+     * resurrection) acts inside {@code checkTotemDeathProtection}, so a death they save never reaches this
+     * class at all. This one instead cancels the death from a NORMAL-priority listener, i.e. AFTER us: if we
+     * settled it at HIGH we would spend a life and cancel the event, the totem's listener would never run,
+     * and it would silently fail to save anyone.
+     *
+     * <p>Checks the whole inventory rather than just the hands on purpose: being broader than Born in Chaos
+     * only costs a deferral to LOW, while being narrower would spend a life on a death it was about to save.
+     */
+    private static boolean mayBeSavedByDeathTotem(ServerPlayer player) {
+        Item totem = ForgeRegistries.ITEMS.getValue(DEATH_TOTEM);
+        if (totem == null) {
+            return false;                            // Born in Chaos isn't installed
+        }
+        return player.getInventory().contains(new ItemStack(totem));
+    }
+
+    /**
+     * Second pass, once Born in Chaos' Death Totem has had its say at NORMAL, and still ahead of Corpse and
+     * Old School Hardcore at LOWEST. Only the deaths {@link #onDeath} deliberately stood back from get here.
+     */
+    @SubscribeEvent(priority = EventPriority.LOW, receiveCanceled = true)
+    public static void onDeathAfterDeathTotem(LivingDeathEvent event) {
+        ServerPlayer player = deferredToDeathTotem;
+        deferredToDeathTotem = null;                 // consume it whatever happens next
+        if (player == null || event.getEntity() != player) {
+            return;                                  // this death was settled at HIGH
+        }
+        if (event.isCanceled()) {
+            return;                                  // the totem saved them: free, exactly like every other totem
+        }
+        MinecraftServer server = player.getServer();
+        if (server == null || SharedLives.isGameOver()) {
+            return;
+        }
+        onPlainDeath(event, server, player);         // the totem passed: the run pays for this death
     }
 
     /** PlayerRevive downed the player: the fall itself is what costs the team a life. */

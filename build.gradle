@@ -80,6 +80,11 @@ dependencies {
     // player is wearing Artifacts' Kitty Slippers. Soft dependency -- KittySlippersCompat is gated on Curios
     // being loaded, and the only CuriosApi reference lives in KittySlippersCuriosBridge.
     compileOnly fg.deobf("top.theillusivec4.curios:curios-forge:${curios_version}:api")
+
+    // World Host, compile-only (NOT bundled): WorldHostFriendsInfo adds your own username to World Host's
+    // Friends screen through its plugin API. Soft dependency -- World Host finds the plugin itself by
+    // scanning for its @Entrypoint annotation, so the class is never loaded when World Host is absent.
+    compileOnly files('libs/world-host-0.5.2+1.20.1-forge.jar')
 }
 
 tasks.named('processResources', ProcessResources).configure {

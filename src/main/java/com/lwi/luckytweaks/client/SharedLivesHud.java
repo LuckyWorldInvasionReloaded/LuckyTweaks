@@ -6,8 +6,12 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.client.event.ClientPlayerNetworkEvent;
 import net.minecraftforge.client.gui.overlay.ForgeGui;
 import net.minecraftforge.client.gui.overlay.IGuiOverlay;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
 
 /**
  * The shared-lives HUD: a row of hearts showing the team's remaining lives out of the run's allowance
@@ -27,13 +31,37 @@ public final class SharedLivesHud implements IGuiOverlay {
 
     private static volatile int remaining = -1;
     private static volatile int max = 0;
+    private static volatile boolean multiplayer = false;
 
     private SharedLivesHud() {}
 
     /** Called on the client thread from the HUD packet. */
-    public static void accept(int rem, int mx) {
+    public static void accept(int rem, int mx, boolean mp) {
         remaining = rem;
         max = mx;
+        multiplayer = mp;
+    }
+
+    /** Whether the server counts this run as a multiplayer one (two players have been online together). */
+    public static boolean isMultiplayerRun() {
+        return multiplayer;
+    }
+
+    /**
+     * Forget the last run's pool when the world goes away. These are statics that outlive a world, and the
+     * config screen's Lives preview reads them from the title screen, where no packet has arrived yet: a
+     * co-op run left behind would draw its 3 hearts over someone's next solo run.
+     */
+    @Mod.EventBusSubscriber(modid = LuckyTweaksMod.MODID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.FORGE)
+    public static final class Reset {
+        private Reset() {}
+
+        @SubscribeEvent
+        public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
+            remaining = -1;
+            max = 0;
+            multiplayer = false;
+        }
     }
 
     /** Team allowance last synced from the server: >0 means the shared-lives rule is active (synced on

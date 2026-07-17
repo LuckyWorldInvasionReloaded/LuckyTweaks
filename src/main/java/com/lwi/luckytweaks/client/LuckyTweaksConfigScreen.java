@@ -329,13 +329,13 @@ public class LuckyTweaksConfigScreen extends Screen {
         }
     }
 
-    /** Whether the run is currently a multiplayer one, mirroring the server's {@code isPublished()} rule. */
+    /**
+     * Whether this run counts as a multiplayer one. Read from the server's own verdict (synced with the
+     * hearts), never re-derived here: opening a solo world to LAN just for the commands is still a solo
+     * run, so a client-side {@code isPublished()} check would preview the wrong allowance.
+     */
     private boolean isMultiplayerNow() {
-        net.minecraft.client.server.IntegratedServer sp = this.minecraft.getSingleplayerServer();
-        if (sp != null) {
-            return sp.isPublished();            // solo world, possibly opened to LAN
-        }
-        return this.minecraft.level != null;    // in a world with no integrated server = remote server
+        return SharedLivesHud.isMultiplayerRun();
     }
 
     @Override

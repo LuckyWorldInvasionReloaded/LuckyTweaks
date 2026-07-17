@@ -12,10 +12,10 @@ import net.minecraft.world.level.saveddata.SavedData;
  * <p>The pool is <b>shared by the whole team</b> and <b>never refills</b>. It is stored on the overworld's
  * data storage, so it survives a reload and is common to every player, not per-player.
  *
- * <p><b>Why {@code used} and not a countdown.</b> The allowance depends on whether the world is a
- * multiplayer one, and a solo world can be opened to LAN mid-run (e4mc, "Open to LAN"). Storing how many
- * lives have been <i>spent</i> and deriving the remainder from the current allowance means inviting a
- * friend grants the multiplayer allowance instead of stranding the run on the solo one.
+ * <p><b>Why {@code used} and not a countdown.</b> The allowance depends on whether the run is a
+ * multiplayer one, and a friend can join a solo run at any point. Storing how many lives have been
+ * <i>spent</i> and deriving the remainder from the current allowance means inviting a friend widens the
+ * pool instead of stranding the run on the singleplayer one.
  *
  * <p>{@link #isGameOver()} is a transient latch, raised only while a team wipe is being executed: it tells
  * {@link com.lwi.luckytweaks.mixin.ReviveDisableMixin} to let PlayerRevive stand aside, and tells
@@ -29,6 +29,7 @@ public class SharedLives extends SavedData {
 
     private int used;
     private boolean welcomed;
+    private boolean multiplayer;
 
     public static SharedLives get(MinecraftServer server) {
         ServerLevel overworld = server.overworld();
@@ -39,6 +40,7 @@ public class SharedLives extends SavedData {
         SharedLives data = new SharedLives();
         data.used = tag.getInt("used");
         data.welcomed = tag.getBoolean("welcomed");
+        data.multiplayer = tag.getBoolean("multiplayer");
         return data;
     }
 
@@ -46,6 +48,7 @@ public class SharedLives extends SavedData {
     public CompoundTag save(CompoundTag tag) {
         tag.putInt("used", used);
         tag.putBoolean("welcomed", welcomed);
+        tag.putBoolean("multiplayer", multiplayer);
         return tag;
     }
 
@@ -60,12 +63,39 @@ public class SharedLives extends SavedData {
     }
 
     /**
-     * The allowance for how this world is being played right now. {@code isPublished()} is true on a
-     * dedicated server AND on a singleplayer world opened to LAN — the same condition PlayerRevive itself
-     * uses to decide whether bleeding applies, so the two systems can never disagree.
+     * Latch this run as a multiplayer one, the first time two players are online together.
+     *
+     * <p>Publishing the world is NOT the test: a solo player opens to LAN just to get commands back, and
+     * that must not quietly hand them the co-op allowance. The live head-count is not the test either --
+     * it would drop the allowance below what has already been spent the moment a team-mate logs off,
+     * stranding the run at zero through no fault of anyone. So the flag only ever goes up, and it is
+     * persisted: once you have really played together, the run keeps the co-op allowance for good.
+     *
+     * <p>Being a dedicated server is not the test either, deliberately: someone alone on a server is
+     * playing alone, and gets the singleplayer allowance. PlayerRevive will still knock them down there,
+     * but with nobody to revive them that death is just as final as it is in singleplayer, so one life is
+     * the honest number. The allowance rises the moment a second player is actually there, and then stays
+     * up for good.
      */
+    public static void noteHeadcount(MinecraftServer server) {
+        if (server.getPlayerList().getPlayerCount() <= 1) {
+            return;
+        }
+        SharedLives data = get(server);
+        if (!data.multiplayer) {
+            data.multiplayer = true;
+            data.setDirty();
+        }
+    }
+
+    /** Whether this run has ever had two players online at once (see {@link #noteHeadcount}). */
+    public static boolean isMultiplayerRun(MinecraftServer server) {
+        return get(server).multiplayer;
+    }
+
+    /** The allowance for this run, keyed on {@link #isMultiplayerRun} rather than on being published. */
     public static int maxLives(MinecraftServer server) {
-        return server.isPublished()
+        return isMultiplayerRun(server)
                 ? TweaksConfig.SHARED_LIVES_MULTIPLAYER.get()
                 : TweaksConfig.SHARED_LIVES_SOLO.get();
     }
