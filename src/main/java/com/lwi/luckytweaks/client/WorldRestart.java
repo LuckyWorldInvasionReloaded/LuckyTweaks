@@ -104,8 +104,9 @@ public final class WorldRestart {
      * shared. Driven by a tick rather than a world-load event because the new world comes up asynchronously,
      * and publishing before the server is ready silently does nothing.
      *
-     * <p>The old port is reused so anyone connected over the plain LAN port keeps the same address; if it is
-     * no longer free we take any port, since the friends-list path (World Host) does not care about it.
+     * <p>The old port is reused so a plain LAN address on the local network stays valid; if it is no longer
+     * free we take any. This only spares the host the trip back through the menu: e4mc mints a fresh domain
+     * for every tunnel, so they still have to pass the new address on to whoever is coming back.
      */
     static void tickReshare(Minecraft mc) {
         if (reshareTicks < 0) {
