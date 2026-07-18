@@ -33,13 +33,10 @@ public final class TweaksConfig {
     /** How many Yakurum Sacred Hearts a player may ever eat, 0 = uncapped (see {@link SacredHeartCap}). */
     public static final ForgeConfigSpec.IntValue SACRED_HEART_MAX_USES;
 
-    /** Master switch for the optional PlayerRevive co-op revive (see
-     *  {@link com.lwi.luckytweaks.mixin.ReviveDisableMixin}). */
-    public static final ForgeConfigSpec.BooleanValue ENABLE_PLAYER_REVIVE;
-
     /** The run's shared pool of lives — the pack's difficulty dial (see {@link SharedLives}). */
     public static final ForgeConfigSpec.IntValue SHARED_LIVES_SOLO;
-    public static final ForgeConfigSpec.IntValue SHARED_LIVES_MULTIPLAYER;
+    public static final ForgeConfigSpec.IntValue SHARED_LIVES_MULTIPLAYER_BASE;
+    public static final ForgeConfigSpec.IntValue BOUGHT_LIVES_CAP;
 
     /** Lucky blocks switched off by the pack (see {@link DisabledBlocks}). */
     public static final ForgeConfigSpec.ConfigValue<List<? extends String>> DISABLED_LUCKY_BLOCKS;
@@ -189,20 +186,13 @@ public final class TweaksConfig {
                 .defineInRange("maxUses", 10, 0, 1000);
         builder.pop();
 
-        builder.push("playerRevive");
-        ENABLE_PLAYER_REVIVE = builder
-                .comment(
-                        "Let the optional PlayerRevive mod work: a player who would die instead drops into a",
-                        "'downed' state a team-mate must come and undo, rather than dying outright.",
-                        "ON by default, and that costs singleplayer nothing: PlayerRevive only ever arms itself",
-                        "when the world is published (a dedicated server, or a world opened to LAN), so a solo run",
-                        "still dies the plain hardcore way. Going down spends one of the run's shared lives",
-                        "(see the [lives] section); giving up costs your items instead of a second life.",
-                        "Turn it OFF to force the death through even in multiplayer. Does nothing when",
-                        "PlayerRevive isn't installed. Default ON.")
-                .define("enablePlayerRevive", true);
-        builder.pop();
-
+        // The [playerRevive] section is gone on purpose (1.3): co-op revive is no longer optional. The
+        // shared-lives pool hands co-op one life per player BECAUSE a downed team-mate can be picked back
+        // up, so a switch that removed the revive while keeping the extra lives no longer composed with
+        // anything. It also stopped being a real choice: the toggle's default flipped false -> true, and
+        // Forge never rewrites a value a config file already holds, so every world carried over from 1.2.x
+        // would silently have kept revive OFF through the release that is built around it. Anyone who truly
+        // wants deaths to go straight through still has PlayerRevive's own config, or can drop the mod.
         builder.push("lives");
         SHARED_LIVES_SOLO = builder
                 .comment(
@@ -212,15 +202,26 @@ public final class TweaksConfig {
                         "Raise it to make a run more forgiving; this is the difficulty dial, rather than a switch",
                         "that would turn hardcore off and take the pack's whole point with it.")
                 .defineInRange("sharedLivesSolo", 1, 1, 100);
-        SHARED_LIVES_MULTIPLAYER = builder
+        SHARED_LIVES_MULTIPLAYER_BASE = builder
                 .comment(
-                        "How many lives the run has once the world is a multiplayer one (a dedicated server, or a",
-                        "singleplayer world opened to LAN). Three by default: co-op is harder, and PlayerRevive",
-                        "turns a death into a knock-down that a team-mate must come and undo.",
-                        "Going down spends a life even if you are revived; giving up costs your items, not a life.",
-                        "Only the ALLOWANCE depends on this -- lives already spent are remembered, so inviting a",
-                        "friend mid-run widens the pool instead of stranding it on the singleplayer value.")
-                .defineInRange("sharedLivesMultiplayer", 3, 1, 100);
+                        "Lives a co-op run gets ON TOP of one per player. One by default, so a duo runs on 3 and a",
+                        "trio on 4: every player brings their own life, plus one spare for the team.",
+                        "A run counts as co-op once two players have actually been online together -- opening to LAN",
+                        "alone, just to get commands, stays on sharedLivesSolo above.",
+                        "The per-player part is counted off the BIGGEST the team has ever been, not who is online",
+                        "right now: otherwise a friend logging off would take a life away, and a team that had",
+                        "already spent them would be stranded at zero through no fault of anyone.",
+                        "Going down spends a life even if you are revived; giving up costs your items, not a life.")
+                .defineInRange("sharedLivesMultiplayerBase", 1, 0, 100);
+        BOUGHT_LIVES_CAP = builder
+                .comment(
+                        "How many extra lives a run may ever BUY, on top of the allowance above. Other mods can",
+                        "sell one through the API (the Lucky Labs merchant does), and this is the ceiling on it.",
+                        "One by default: an extra life is meant to be a moment, not an income. Left uncapped, any",
+                        "way of farming the currency turns straight into infinite lives and hardcore stops meaning",
+                        "anything. Counts lives BOUGHT over the whole run, not lives currently held, so spending",
+                        "the bought one does not free the slot. 0 stops them being sold at all.")
+                .defineInRange("boughtLivesCap", 1, 0, 100);
         builder.pop();
 
         builder.push("locator");

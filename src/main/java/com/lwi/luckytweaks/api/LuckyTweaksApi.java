@@ -5,8 +5,12 @@ import com.lwi.luckytweaks.LegendaryDropBus;
 import com.lwi.luckytweaks.LuckCaps;
 import com.lwi.luckytweaks.LuckState;
 import com.lwi.luckytweaks.LuckyBlockBreakBus;
+import com.lwi.luckytweaks.SharedLives;
+import com.lwi.luckytweaks.TweaksConfig;
+import com.lwi.luckytweaks.net.SharedLivesNet;
 import com.lwi.luckytweaks.util.LuckyBlocks;
 import com.lwi.luckytweaks.util.WorldGenInfo;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceLocation;
@@ -107,6 +111,45 @@ public final class LuckyTweaksApi {
      */
     public static void registerLegendaryDropListener(LegendaryDropListener listener) {
         LegendaryDropBus.register(listener);
+    }
+
+    /** Lives left in the run's shared pool, or -1 when the shared-lives rule is not running. */
+    public static int getSharedLivesRemaining(MinecraftServer server) {
+        return server == null ? -1 : SharedLives.remaining(server);
+    }
+
+    /** Whether the run may still buy a life (it has not hit the {@code boughtLivesCap} config yet). */
+    public static boolean canBuySharedLife(MinecraftServer server) {
+        return server != null && SharedLives.canBuyLife(server);
+    }
+
+    /**
+     * How many lives this run is allowed to buy in total ({@code boughtLivesCap}). It is a property of the
+     * RUN, not of a player -- the pool is shared, so its ceiling is shared too. Exposed so a seller can name
+     * the real number when it refuses, instead of leaving the player guessing why.
+     */
+    public static int getBoughtLivesCap() {
+        return TweaksConfig.BOUGHT_LIVES_CAP.get();
+    }
+
+    /**
+     * Sell the run one more life: raises the shared allowance by one and refreshes everyone's hearts.
+     * Returns the new remaining count, or -1 if the run has already bought its limit.
+     *
+     * <p>The pool never refills on its own -- that is the whole point of it -- so the only way it can grow
+     * is somebody paying for it, up to {@code boughtLivesCap}. Added for the Lucky Labs merchant, who does
+     * exactly that. Check {@link #canBuySharedLife} and charge your own currency only if it says yes: this
+     * refuses rather than throws, and a caller that charges first would be taking payment for nothing.
+     */
+    public static int buySharedLife(MinecraftServer server) {
+        if (server == null) {
+            return -1;
+        }
+        int left = SharedLives.buyLife(server);
+        if (left >= 0) {
+            SharedLivesNet.broadcast(server);
+        }
+        return left;
     }
 
     /**

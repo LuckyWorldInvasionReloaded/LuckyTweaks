@@ -40,13 +40,13 @@ public final class SharedLivesNet {
         }
         CHANNEL.send(PacketDistributor.PLAYER.with(() -> player),
                 new SharedLivesHudPacket(SharedLives.remaining(server), SharedLives.maxLives(server),
-                        SharedLives.isMultiplayerRun(server)));
+                        SharedLives.isMultiplayerRun(server), SharedLives.peakPlayers(server)));
     }
 
     /** Push the current pool to everyone — the pool is shared, so a change concerns the whole team. */
     public static void broadcast(MinecraftServer server) {
         CHANNEL.send(PacketDistributor.ALL.noArg(),
                 new SharedLivesHudPacket(SharedLives.remaining(server), SharedLives.maxLives(server),
-                        SharedLives.isMultiplayerRun(server)));
+                        SharedLives.isMultiplayerRun(server), SharedLives.peakPlayers(server)));
     }
 }

@@ -23,14 +23,17 @@ public final class LuckChanceHud {
     private LuckChanceHud() {}
 
     public static void register() {
-        LuckyStatsClientApi.registerHudStat("luckytweaks_chance", "Chance",
-                data -> "Chance: " + HudStat.signed(clamp(HudStat.sumChildInts(data.getCompound(SUB_KEY)))) + "%");
+        // Labels/titles are lang KEYS (Lucky Stats resolves them at render); the HUD line resolves its
+        // own key per frame, so a language switch applies immediately.
+        LuckyStatsClientApi.registerHudStat("luckytweaks_chance", "luckytweaks.stat.chance_label",
+                data -> net.minecraft.client.resources.language.I18n.get("luckytweaks.hud.chance_line",
+                        HudStat.signed(clamp(HudStat.sumChildInts(data.getCompound(SUB_KEY))))));
         // Lucky Tweaks owns the "Luck" section header + the combined total. Other mods (Optional
         // Suffering's malus, Lucky XP's merchant temp/perm) add their own rows to the same section --
-        // Lucky Stats merges same-titled sections. Order 100 keeps "Total chance" LAST, below the rows
-        // it sums.
-        LuckyStatsClientApi.registerScreenSection("Luck", 100, data -> List.of(
-                new ScreenSections.Row("Total chance",
+        // Lucky Stats merges same-KEYED sections (the shared key lives in luckystats' lang). Order 100
+        // keeps "Total chance" LAST, below the rows it sums.
+        LuckyStatsClientApi.registerScreenSection("luckystats.section.luck", 100, data -> List.of(
+                new ScreenSections.Row("luckytweaks.stat.total_chance",
                         HudStat.signed(clamp(HudStat.sumChildInts(data.getCompound(SUB_KEY)))) + "%")));
     }
 

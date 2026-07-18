@@ -2,7 +2,6 @@ package com.lwi.luckytweaks.mixin;
 
 import com.lwi.luckytweaks.PlayerReviveCompat;
 import com.lwi.luckytweaks.SharedLives;
-import com.lwi.luckytweaks.TweaksConfig;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
@@ -12,8 +11,9 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
- * Hard-disables PlayerRevive when it has no business running: the {@code enablePlayerRevive} toggle is OFF,
- * a team wipe is under way, or the player is the only one online (see the three cases below). PlayerRevive
+ * Hard-disables PlayerRevive when it has no business running: a team wipe is under way, or the player is
+ * the only one online (see the two cases below). Co-op revive itself is not optional — the shared-lives
+ * pool is built on it — so there is no longer a config switch here. PlayerRevive
  * gates its WHOLE bleeding/revive system behind the static {@code ReviveEventServer.isReviveActive(Entity)},
  * which its {@code playerDied(LivingDeathEvent)} handler (priority HIGHEST) checks BEFORE it cancels the
  * death. Forcing it to {@code false} here means PlayerRevive never cancels the death, never starts bleeding,
@@ -36,13 +36,13 @@ public class ReviveDisableMixin {
             require = 0
     )
     private static void luckytweaks$disableRevive(Entity player, CallbackInfoReturnable<Boolean> cir) {
-        // Second case: a team wipe is being executed (the shared pool just ran dry). PlayerRevive must not
+        // First case: a team wipe is being executed (the shared pool just ran dry). PlayerRevive must not
         // catch those deaths and knock everyone down instead of letting the run end.
-        if (!TweaksConfig.ENABLE_PLAYER_REVIVE.get() || SharedLives.isGameOver()) {
+        if (SharedLives.isGameOver()) {
             cir.setReturnValue(false);
             return;
         }
-        // Third case: nobody else is online. Being downed only means something when a team-mate can come and
+        // Second case: nobody else is online. Being downed only means something when a team-mate can come and
         // undo it; alone -- on a server just as much as on a LAN world -- it is a plain death wearing a
         // costume, so let it through as one and keep singleplayer and "server, but alone" identical.
         //
@@ -57,6 +57,17 @@ public class ReviveDisableMixin {
 
     private static boolean isAlone(ServerPlayer player) {
         MinecraftServer server = player.getServer();
-        return server == null || server.getPlayerList().getPlayerCount() <= 1;
+        if (server == null) {
+            return true;
+        }
+        // Spectators can't revive anyone: a survivor whose only company is a spectator IS alone, and
+        // downing them would leave give-up (items dropped) as their only way off the ground.
+        int playing = 0;
+        for (ServerPlayer p : server.getPlayerList().getPlayers()) {
+            if (!p.isSpectator()) {
+                playing++;
+            }
+        }
+        return playing <= 1;
     }
 }

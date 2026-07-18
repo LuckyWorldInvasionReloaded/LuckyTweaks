@@ -28,8 +28,9 @@ public class SharedLives extends SavedData {
     private static volatile boolean gameOver = false;
 
     private int used;
-    private boolean welcomed;
     private boolean multiplayer;
+    private int bought;
+    private int peakPlayers;
 
     public static SharedLives get(MinecraftServer server) {
         ServerLevel overworld = server.overworld();
@@ -39,28 +40,27 @@ public class SharedLives extends SavedData {
     private static SharedLives load(CompoundTag tag) {
         SharedLives data = new SharedLives();
         data.used = tag.getInt("used");
-        data.welcomed = tag.getBoolean("welcomed");
         data.multiplayer = tag.getBoolean("multiplayer");
+        data.bought = tag.getInt("bought");
+        data.peakPlayers = tag.getInt("peakPlayers");
+        // Saves from before peakPlayers existed: multiplayer was latched but the peak reads 0, which
+        // would drop an existing duo to base+1 lives until both happen to be online together again.
+        // Multiplayer means at least two were once online at once, so 2 is the honest floor.
+        if (data.multiplayer && data.peakPlayers < 2) {
+            data.peakPlayers = 2;
+        }
         return data;
     }
 
     @Override
     public CompoundTag save(CompoundTag tag) {
         tag.putInt("used", used);
-        tag.putBoolean("welcomed", welcomed);
         tag.putBoolean("multiplayer", multiplayer);
+        tag.putInt("bought", bought);
+        tag.putInt("peakPlayers", peakPlayers);
         return tag;
     }
 
-    /** Whether the one-time "designed for hardcore, adjustable" welcome line has already been shown. */
-    public boolean hasWelcomed() {
-        return welcomed;
-    }
-
-    public void setWelcomed() {
-        this.welcomed = true;
-        setDirty();
-    }
 
     /**
      * Latch this run as a multiplayer one, the first time two players are online together.
@@ -78,14 +78,39 @@ public class SharedLives extends SavedData {
      * up for good.
      */
     public static void noteHeadcount(MinecraftServer server) {
-        if (server.getPlayerList().getPlayerCount() <= 1) {
+        // Spectators don't count: they can't revive anyone and aren't playing. A friend hopping in
+        // to WATCH a solo run must not latch it as multiplayer (that never comes back down).
+        int online = 0;
+        for (var p : server.getPlayerList().getPlayers()) {
+            if (!p.isSpectator()) {
+                online++;
+            }
+        }
+        if (online <= 1) {
             return;
         }
         SharedLives data = get(server);
+        boolean dirty = false;
         if (!data.multiplayer) {
             data.multiplayer = true;
+            dirty = true;
+        }
+        // The allowance is one life per player, so it has to remember the biggest the team has ever been,
+        // not how big it is right now. A live count would take a life away the moment someone logs off --
+        // and if the team had already spent them, the run would be stranded at zero because a friend went
+        // to bed. Like the flag above, this only ever goes up.
+        if (online > data.peakPlayers) {
+            data.peakPlayers = online;
+            dirty = true;
+        }
+        if (dirty) {
             data.setDirty();
         }
+    }
+
+    /** The largest the team has ever been at once, i.e. how many lives the co-op allowance is built on. */
+    public static int peakPlayers(MinecraftServer server) {
+        return Math.max(1, get(server).peakPlayers);
     }
 
     /** Whether this run has ever had two players online at once (see {@link #noteHeadcount}). */
@@ -93,11 +118,46 @@ public class SharedLives extends SavedData {
         return get(server).multiplayer;
     }
 
-    /** The allowance for this run, keyed on {@link #isMultiplayerRun} rather than on being published. */
+    /**
+     * The allowance for this run, keyed on {@link #isMultiplayerRun} rather than on being published, plus
+     * any lives bought since (see {@link #buyLife}).
+     *
+     * <p>Co-op is one life per player plus a spare, counted off the team's {@link #peakPlayers} rather than
+     * who happens to be online: a duo gets 3, a trio 4, and nobody loses a life because a friend logged off.
+     * Alone, it stays the flat singleplayer allowance -- the first death is the run.
+     */
     public static int maxLives(MinecraftServer server) {
-        return isMultiplayerRun(server)
-                ? TweaksConfig.SHARED_LIVES_MULTIPLAYER.get()
+        int base = isMultiplayerRun(server)
+                ? TweaksConfig.SHARED_LIVES_MULTIPLAYER_BASE.get() + peakPlayers(server)
                 : TweaksConfig.SHARED_LIVES_SOLO.get();
+        return base + get(server).bought;
+    }
+
+    /** Whether the run may still buy a life, i.e. it has not hit {@code boughtLivesCap} yet. */
+    public static boolean canBuyLife(MinecraftServer server) {
+        return get(server).bought < TweaksConfig.BOUGHT_LIVES_CAP.get();
+    }
+
+    /**
+     * Add one life to the run, paid for elsewhere (the Lucky Labs merchant sells them). Returns the new
+     * remaining count, or -1 when the run has already bought all it is allowed to.
+     *
+     * <p>Raises the ALLOWANCE rather than refunding a spent life, which keeps the pool honest in both
+     * directions: buying while still untouched genuinely widens it, the count of deaths already paid for is
+     * never rewritten, and the hearts row simply grows by one. The rule that the pool never refills on its
+     * own still holds -- this is someone spending for it, once.
+     *
+     * <p>The cap counts lives BOUGHT across the run, never lives currently held: spending a bought life must
+     * not free the slot to buy another, or the ceiling would only ever slow farming down instead of ending it.
+     */
+    public static int buyLife(MinecraftServer server) {
+        if (!canBuyLife(server)) {
+            return -1;
+        }
+        SharedLives data = get(server);
+        data.bought++;
+        data.setDirty();
+        return remaining(server);
     }
 
     public static int remaining(MinecraftServer server) {

@@ -1,5 +1,7 @@
 package com.lwi.luckytweaks.client;
 
+import net.minecraft.client.resources.language.I18n;
+
 /** The four screen corners a HUD element can anchor to (kept simple: the user asked for corners). */
 public enum HudCorner {
     TOP_LEFT(false, false),
@@ -20,12 +22,12 @@ public enum HudCorner {
     }
 
     public String label() {
-        return switch (this) {
-            case TOP_LEFT -> "Top-Left";
-            case TOP_RIGHT -> "Top-Right";
-            case BOT_LEFT -> "Bottom-Left";
-            case BOT_RIGHT -> "Bottom-Right";
-        };
+        return I18n.get(switch (this) {
+            case TOP_LEFT -> "luckytweaks.gui.corner_top_left";
+            case TOP_RIGHT -> "luckytweaks.gui.corner_top_right";
+            case BOT_LEFT -> "luckytweaks.gui.corner_bot_left";
+            case BOT_RIGHT -> "luckytweaks.gui.corner_bot_right";
+        });
     }
 
     public static HudCorner byName(String name) {

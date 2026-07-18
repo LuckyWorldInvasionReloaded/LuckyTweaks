@@ -85,7 +85,7 @@ public final class WorldRestart {
         if (mc.level != null) {
             mc.level.disconnect();
         }
-        mc.clearLevel(new GenericDirtMessageScreen(Component.literal("Creating a new world...")));
+        mc.clearLevel(new GenericDirtMessageScreen(Component.translatable("luckytweaks.gui.creating_world")));
 
         // Delete the old save (same call Old School Hardcore uses).
         try (LevelStorageSource.LevelStorageAccess access = mc.getLevelSource().createAccess(levelId)) {

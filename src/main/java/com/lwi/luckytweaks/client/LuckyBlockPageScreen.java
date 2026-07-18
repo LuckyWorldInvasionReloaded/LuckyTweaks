@@ -6,6 +6,7 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Checkbox;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.resources.language.I18n;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
@@ -29,7 +30,8 @@ import java.util.Set;
  */
 public final class LuckyBlockPageScreen extends Screen {
     private static final String[] DIM_IDS = {"minecraft:overworld", "minecraft:the_nether", "minecraft:the_end"};
-    private static final String[] DIM_LABELS = {"Overworld", "Nether", "End"};
+    private static final String[] DIM_LABEL_KEYS = {
+            "luckytweaks.gui.dim_overworld", "luckytweaks.gui.dim_nether", "luckytweaks.gui.dim_end"};
     private static final int FREQUENT = 80;
     private static final int MEDIUM = 200;
     private static final int RARE = 500;
@@ -62,7 +64,7 @@ public final class LuckyBlockPageScreen extends Screen {
 
         // Master "off" switch. While ticked, every per-dimension control below is greyed and ignored.
         this.disableBox = new Checkbox(left, y, CONTENT_W, 20,
-                Component.literal("Disable entirely (no spawn, breaks inert)"), this.state.disabled, true);
+                Component.translatable("luckytweaks.gui.disable_entirely"), this.state.disabled, true);
         this.addRenderableWidget(this.disableBox);
         y += 28;
 
@@ -71,16 +73,17 @@ public final class LuckyBlockPageScreen extends Screen {
             boolean isNative = this.nativeDims.contains(DIM_IDS[i]);
             // A non-native dimension is forced on when ticked; flag it so the player knows ticking it
             // makes the block spawn somewhere it normally wouldn't.
-            String label = isNative ? DIM_LABELS[i] : DIM_LABELS[i] + " (forced)";
+            String dimName = I18n.get(DIM_LABEL_KEYS[i]);
+            String label = isNative ? dimName : I18n.get("luckytweaks.gui.dim_forced", dimName);
             this.dimBoxes[i] = new Checkbox(left, y, CONTENT_W, 20,
-                    Component.literal(label + " - spawn here"), this.state.dimEnabled[i], true);
+                    Component.translatable("luckytweaks.gui.spawn_here", label), this.state.dimEnabled[i], true);
             this.addRenderableWidget(this.dimBoxes[i]);
 
             int by = y + 22;
             // Three frequency presets feeding the same rate field (and the field stays editable for any N).
-            this.dimPresets[i][0] = preset(left, by, "Frequent", dim, FREQUENT);
-            this.dimPresets[i][1] = preset(left + 66, by, "Medium", dim, MEDIUM);
-            this.dimPresets[i][2] = preset(left + 132, by, "Rare", dim, RARE);
+            this.dimPresets[i][0] = preset(left, by, "luckytweaks.gui.frequent", dim, FREQUENT);
+            this.dimPresets[i][1] = preset(left + 66, by, "luckytweaks.gui.medium", dim, MEDIUM);
+            this.dimPresets[i][2] = preset(left + 132, by, "luckytweaks.gui.rare", dim, RARE);
 
             EditBox rate = new EditBox(this.font, left + 200, by, 44, 20, Component.empty());
             rate.setFilter(s -> s.matches("\\d*"));
@@ -107,8 +110,8 @@ public final class LuckyBlockPageScreen extends Screen {
     }
 
     /** A frequency preset button: sets the row's rate (state + EditBox) to a fixed "1 in N". */
-    private Button preset(int x, int y, String text, int dim, int rate) {
-        Button b = Button.builder(Component.literal(text), btn -> {
+    private Button preset(int x, int y, String labelKey, int dim, int rate) {
+        Button b = Button.builder(Component.translatable(labelKey), btn -> {
             this.state.dimRate[dim] = rate;
             this.dimRates[dim].setValue(Integer.toString(rate)); // responder stores it back, kept in sync
         }).bounds(x, y, 62, 20).build();
@@ -158,7 +161,7 @@ public final class LuckyBlockPageScreen extends Screen {
         for (int i = 0; i < 3; i++) {
             boolean rowOn = !off && this.dimBoxes[i].selected();
             int hintColor = rowOn ? 0xA0A0A0 : 0x707070; // dimmer when the row is inactive
-            gg.drawString(this.font, Component.literal("1 in N (lower = more common)"),
+            gg.drawString(this.font, Component.translatable("luckytweaks.gui.rate_hint"),
                     this.dimRates[i].getX() + this.dimRates[i].getWidth() + 6, this.dimRates[i].getY() + 6,
                     hintColor, false);
         }

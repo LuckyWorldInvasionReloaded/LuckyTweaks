@@ -19,8 +19,8 @@ import java.util.List;
 /**
  * Rebuilds the Lucky Block mod's "Luck: +X" item tooltip line (found by its translation key):
  * <ul>
- *   <li>the label is hardcoded to the ENGLISH "Luck" whatever the game language — the mod ships a
- *       machine-translated French line ("la chance") and the pack is English-only;</li>
+ *   <li>the label comes from OUR lang key ({@code luckytweaks.tooltip.luck}) instead of the mod's —
+ *       the Lucky Block mod ships a machine-translated French line ("la chance"), ours is curated;</li>
  *   <li>when the stored Luck has reached the block's effective cap (per-block cap from the config/API,
  *       bounded by the global +100 ceiling), the value renders GOLD with a "(max)" suffix, so a
  *       fully-infused block reads at a glance;</li>
@@ -54,7 +54,7 @@ public final class LuckyTooltipTweaks {
 
         MutableComponent value;
         if (luck > 0 && luck >= max) {
-            value = Component.literal("+" + luck + " (max)").withStyle(ChatFormatting.GOLD);
+            value = Component.translatable("luckytweaks.tooltip.luck_max", luck).withStyle(ChatFormatting.GOLD);
         } else if (luck > 0) {
             value = Component.literal("+" + luck).withStyle(ChatFormatting.GREEN);
         } else if (luck < 0) {
@@ -62,7 +62,7 @@ public final class LuckyTooltipTweaks {
         } else {
             value = Component.literal("0").withStyle(ChatFormatting.GOLD);
         }
-        return Component.literal("Luck").withStyle(ChatFormatting.GRAY)
+        return Component.translatable("luckytweaks.tooltip.luck").withStyle(ChatFormatting.GRAY)
                 .append(Component.literal(": ").withStyle(ChatFormatting.GRAY))
                 .append(value);
     }

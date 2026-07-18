@@ -51,10 +51,12 @@ import java.util.Optional;
  *       Spends a life and respawns, keeping the inventory.</li>
  * </ul>
  *
- * <p>Bleeding out is not one of them: the pack sets PlayerRevive's {@code bleedTime} so high that a downed
- * player waits for rescue indefinitely, in safety (the shipped config also disables player damage on downed
- * players, so nothing can finish them except the void or /kill). Giving up is the only way out of the
- * ground, and it is what keeps a fully-downed team from deadlocking.
+ * <p>Bleeding out lands in the second path: the pack ships {@code bleedTime} = 5 minutes ON PURPOSE
+ * (designer decision 2026-07-18) — rescue has a deadline, which keeps the team playing close together
+ * instead of scattering across the map. A player nobody reaches in time bleeds out exactly like a
+ * give-up: the life was already spent at the fall, the items drop where they fell. Downed players are
+ * otherwise safe meanwhile (the shipped config disables damage on them), and giving up early is what
+ * keeps a fully-downed team from deadlocking.
  */
 @Mod.EventBusSubscriber(modid = LuckyTweaksMod.MODID)
 public final class SharedLivesEvents {
@@ -103,15 +105,13 @@ public final class SharedLivesEvents {
         if (server == null) {
             return;
         }
+        // Latch multiplayer/peak NOW, not at the next once-a-second tick: in that window a downing
+        // would consume against the SOLO allowance (1 life) and wipe the team on the spot.
+        SharedLives.noteHeadcount(server);
+        // Push the pool so the heart HUD is correct from the first frame. There used to be a one-time
+        // "you have a single life..." chat line here too; it is gone now that the hearts show the count
+        // on screen, which says it more plainly than a message you read once and forget.
         SharedLivesNet.sendTo(player);
-        SharedLives data = SharedLives.get(server);
-        if (!data.hasWelcomed()) {
-            data.setWelcomed();
-            player.displayClientMessage(Component.literal(
-                            "You have a single life — three shared lives in multiplayer. The modpack is built to be "
-                                    + "played this way, but you can adjust it in Mods > Lucky Tweaks.")
-                    .withStyle(ChatFormatting.GOLD), false);
-        }
     }
 
     // HIGH, not LOWEST: PlayerRevive cancels at HIGHEST (receiveCanceled lets us see that), and OUR
@@ -178,7 +178,14 @@ public final class SharedLivesEvents {
         if (totem == null) {
             return false;                            // Born in Chaos isn't installed
         }
-        return player.getInventory().contains(new ItemStack(totem));
+        // By ITEM, not Inventory#contains(ItemStack) — that compares NBT too, so a totem renamed at
+        // an anvil would be missed, we would settle the death at HIGH, and the totem could never fire.
+        for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
+            if (player.getInventory().getItem(i).is(totem)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -207,12 +214,13 @@ public final class SharedLivesEvents {
         int left = SharedLives.consume(server);
         SharedLivesNet.broadcast(server);               // refresh the hearts HUD for everyone
         if (left <= 0) {
-            broadcast(server, player.getScoreboardName() + " went down with no lives left.", ChatFormatting.DARK_RED);
+            broadcast(server, Component.translatable("luckytweaks.msg.down_no_lives",
+                    player.getScoreboardName()), ChatFormatting.DARK_RED);
             teamGameOver(server, null);
             return;
         }
-        broadcast(server, player.getScoreboardName() + " went down — " + livesLabel(left) + " left. Revive them!",
-                ChatFormatting.GOLD);
+        broadcast(server, Component.translatable("luckytweaks.msg.down",
+                player.getScoreboardName(), livesLabel(left)), ChatFormatting.GOLD);
     }
 
     /**
@@ -229,7 +237,7 @@ public final class SharedLivesEvents {
         restore(player);
         respawn(player);
         player.displayClientMessage(
-                Component.literal("You're out of the fight. Your items are where you fell.")
+                Component.translatable("luckytweaks.msg.out_of_fight")
                         .withStyle(ChatFormatting.RED), false);
     }
 
@@ -239,14 +247,15 @@ public final class SharedLivesEvents {
         SharedLivesNet.broadcast(server);               // refresh the hearts HUD for everyone
         if (left <= 0) {
             // Let this death stand — hardcore turns it into a Game Over — and take the rest down with it.
-            broadcast(server, "No lives left. The run is over.", ChatFormatting.DARK_RED);
+            broadcast(server, Component.translatable("luckytweaks.msg.game_over"), ChatFormatting.DARK_RED);
             teamGameOver(server, player);
             return;
         }
         event.setCanceled(true);
         restore(player);
         respawn(player);
-        broadcast(server, player.getScoreboardName() + " died — " + livesLabel(left) + " left.", ChatFormatting.GOLD);
+        broadcast(server, Component.translatable("luckytweaks.msg.died",
+                player.getScoreboardName(), livesLabel(left)), ChatFormatting.GOLD);
     }
 
     /**
@@ -326,11 +335,13 @@ public final class SharedLivesEvents {
         return source.typeHolder().unwrapKey().map(key -> BLED_TO_DEATH.equals(key.location())).orElse(false);
     }
 
-    private static String livesLabel(int lives) {
-        return lives == 1 ? "1 shared life" : lives + " shared lives";
+    private static Component livesLabel(int lives) {
+        return lives == 1 ? Component.translatable("luckytweaks.msg.lives_one")
+                : Component.translatable("luckytweaks.msg.lives_many", lives);
     }
 
-    private static void broadcast(MinecraftServer server, String text, ChatFormatting colour) {
-        server.getPlayerList().broadcastSystemMessage(Component.literal(text).withStyle(colour), false);
+    /** Translatable components resolve on each CLIENT, so every player reads these in their own language. */
+    private static void broadcast(MinecraftServer server, Component text, ChatFormatting colour) {
+        server.getPlayerList().broadcastSystemMessage(text.copy().withStyle(colour), false);
     }
 }

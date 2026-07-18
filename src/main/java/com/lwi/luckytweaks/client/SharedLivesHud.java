@@ -32,19 +32,26 @@ public final class SharedLivesHud implements IGuiOverlay {
     private static volatile int remaining = -1;
     private static volatile int max = 0;
     private static volatile boolean multiplayer = false;
+    private static volatile int peakPlayers = 1;
 
     private SharedLivesHud() {}
 
     /** Called on the client thread from the HUD packet. */
-    public static void accept(int rem, int mx, boolean mp) {
+    public static void accept(int rem, int mx, boolean mp, int peak) {
         remaining = rem;
         max = mx;
         multiplayer = mp;
+        peakPlayers = peak;
     }
 
     /** Whether the server counts this run as a multiplayer one (two players have been online together). */
     public static boolean isMultiplayerRun() {
         return multiplayer;
+    }
+
+    /** Biggest the team has ever been at once: the co-op allowance is one life per head, plus a spare. */
+    public static int peakPlayers() {
+        return Math.max(1, peakPlayers);
     }
 
     /**
@@ -61,6 +68,7 @@ public final class SharedLivesHud implements IGuiOverlay {
             remaining = -1;
             max = 0;
             multiplayer = false;
+            peakPlayers = 1;
         }
     }
 

@@ -20,13 +20,15 @@ public final class SealDisplay {
     private SealDisplay() {}
 
     public static void register() {
-        LuckyStatsClientApi.registerScreenSection("Run Integrity", SealDisplay::rows);
+        // Titles/labels/values are lang KEYS: Lucky Stats resolves them at render (an unknown key —
+        // like the audit reason lines below, kept in English on purpose — passes through verbatim).
+        LuckyStatsClientApi.registerScreenSection("luckytweaks.section.run_integrity", SealDisplay::rows);
     }
 
     private static List<ScreenSections.Row> rows(CompoundTag stats) {
         List<ScreenSections.Row> out = new ArrayList<>();
         if (!RunSeal.present(stats)) {
-            out.add(new ScreenSections.Row("Status", "Not recorded yet"));
+            out.add(new ScreenSections.Row("luckytweaks.seal.status", "luckytweaks.seal.not_recorded"));
             return out;
         }
         int reasons = RunSeal.reasons(stats);
@@ -35,9 +37,9 @@ public final class SealDisplay {
             reasons |= RunSeal.TAMPERED;
         }
         if (reasons == 0) {
-            out.add(new ScreenSections.Row("Status", "VALID - default, survival"));
+            out.add(new ScreenSections.Row("luckytweaks.seal.status", "luckytweaks.seal.valid"));
         } else {
-            out.add(new ScreenSections.Row("Status", "INVALID"));
+            out.add(new ScreenSections.Row("luckytweaks.seal.status", "luckytweaks.seal.invalid"));
             for (String reason : RunSeal.reasonLabels(reasons)) {
                 out.add(new ScreenSections.Row("-", reason));
             }

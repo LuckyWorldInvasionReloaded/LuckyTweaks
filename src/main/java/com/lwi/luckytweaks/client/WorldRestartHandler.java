@@ -54,7 +54,7 @@ public final class WorldRestartHandler {
         }
         int x = deathScreen.width / 2 - 100;
         int y = deathScreen.height / 4 + 120; // below OSH's spectate (+72) and delete-to-title (+96) buttons
-        Button button = Button.builder(Component.literal("Delete & Restart"), b -> WorldRestart.deleteAndRestart(mc))
+        Button button = Button.builder(Component.translatable("luckytweaks.gui.delete_restart"), b -> WorldRestart.deleteAndRestart(mc))
                 .bounds(x, y, 200, 20)
                 .build();
         button.active = false; // greyed out until the delay elapses, in step with OSH's buttons

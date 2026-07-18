@@ -15,6 +15,7 @@ import net.minecraft.client.gui.components.ContainerObjectSelectionList;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.narration.NarratableEntry;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.resources.language.I18n;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
@@ -53,7 +54,8 @@ public class LuckyTweaksConfigScreen extends Screen {
     private static final int NAME_W = 250;
 
     static final String[] DIM_IDS = {"minecraft:overworld", "minecraft:the_nether", "minecraft:the_end"};
-    private static final String[] DIM_SHORT = {"O", "N", "E"};
+    private static final String[] DIM_SHORT_KEYS = {
+            "luckytweaks.gui.dim_short_overworld", "luckytweaks.gui.dim_short_nether", "luckytweaks.gui.dim_short_end"};
     private static final int MEDIUM = 200; // default "1 in N" for a dimension a block doesn't natively use
 
     private final Screen parent;
@@ -61,7 +63,6 @@ public class LuckyTweaksConfigScreen extends Screen {
     private boolean weaponFix;
     private boolean fusion;
     private boolean crocodile;
-    private boolean playerRevive;
     private double multiplier;
     // Lives tab (solo/multi = COMMON; heart style + HUD position = CLIENT).
     private int livesSolo;
@@ -80,7 +81,6 @@ public class LuckyTweaksConfigScreen extends Screen {
     private Checkbox weaponBox;
     private Checkbox fusionBox;
     private Checkbox crocodileBox;
-    private Checkbox reviveBox;
     private MultiplierSlider slider;
     private IntSlider soloSlider;
     private IntSlider multiSlider;
@@ -89,15 +89,14 @@ public class LuckyTweaksConfigScreen extends Screen {
     private BlockList list;
 
     public LuckyTweaksConfigScreen(Screen parent) {
-        super(Component.literal("Lucky Tweaks"));
+        super(Component.translatable("luckytweaks.gui.title"));
         this.parent = parent;
         this.weaponFix = TweaksConfig.FIX_LUCKY_WEAPONS.get();
         this.fusion = TweaksConfig.ENABLE_LUCK_FUSION.get();
         this.crocodile = TweaksConfig.FIX_CROCODILE.get();
-        this.playerRevive = TweaksConfig.ENABLE_PLAYER_REVIVE.get();
         this.multiplier = TweaksConfig.LUCKY_BLOCK_SPAWN_MULTIPLIER.get();
         this.livesSolo = TweaksConfig.SHARED_LIVES_SOLO.get();
-        this.livesMulti = TweaksConfig.SHARED_LIVES_MULTIPLAYER.get();
+        this.livesMulti = TweaksConfig.SHARED_LIVES_MULTIPLAYER_BASE.get();
         this.heartStyle = TweaksClientConfig.CLIENT.livesHeartStyle.get();
         this.hudCorner = TweaksClientConfig.CLIENT.livesHudCorner.get();
         this.hudX = TweaksClientConfig.CLIENT.livesHudX.get();
@@ -153,10 +152,10 @@ public class LuckyTweaksConfigScreen extends Screen {
         int tabW = 100;
         int gap = 4;
         int startX = this.width / 2 - (3 * tabW + 2 * gap) / 2;
-        String[] tabNames = {"Settings", "Lucky Blocks", "Lives"};
-        for (int t = 0; t < tabNames.length; t++) {
+        String[] tabKeys = {"luckytweaks.gui.tab_settings", "luckytweaks.gui.tab_lucky_blocks", "luckytweaks.gui.tab_lives"};
+        for (int t = 0; t < tabKeys.length; t++) {
             final int tab = t;
-            Button tabBtn = Button.builder(Component.literal(tabNames[t]), b -> switchTab(tab))
+            Button tabBtn = Button.builder(Component.translatable(tabKeys[t]), b -> switchTab(tab))
                     .bounds(startX + t * (tabW + gap), TAB_Y, tabW, 20).build();
             tabBtn.active = this.activeTab != t;
             this.addRenderableWidget(tabBtn);
@@ -165,7 +164,6 @@ public class LuckyTweaksConfigScreen extends Screen {
         this.weaponBox = null;
         this.fusionBox = null;
         this.crocodileBox = null;
-        this.reviveBox = null;
         this.slider = null;
         this.soloSlider = null;
         this.multiSlider = null;
@@ -176,18 +174,17 @@ public class LuckyTweaksConfigScreen extends Screen {
         if (this.activeTab == 0) {
             int x = this.width / 2 - 150;
             this.weaponBox = new Checkbox(x, 58, 300, 20,
-                    Component.literal("Safer lucky weapons"), this.weaponFix, true);
+                    Component.translatable("luckytweaks.gui.safer_weapons"), this.weaponFix, true);
             this.fusionBox = new Checkbox(x, 84, 300, 20,
-                    Component.literal("Enable lucky-block fusion"), this.fusion, true);
+                    Component.translatable("luckytweaks.gui.lucky_block_fusion"), this.fusion, true);
             this.crocodileBox = new Checkbox(x, 110, 300, 20,
-                    Component.literal("Crocodiles return swallowed items"), this.crocodile, true);
-            this.reviveBox = new Checkbox(x, 136, 300, 20,
-                    Component.literal("Enable Player Revive (multiplayer co-op)"), this.playerRevive, true);
-            this.slider = new MultiplierSlider(x, 162, 300, 20, this.multiplier);
+                    Component.translatable("luckytweaks.gui.crocodile_items"), this.crocodile, true);
+            // Row 136 used to hold the Player Revive switch; co-op revive is no longer optional (1.3), so
+            // the slider moves up into its place rather than leaving a hole in the column.
+            this.slider = new MultiplierSlider(x, 136, 300, 20, this.multiplier);
             this.addRenderableWidget(this.weaponBox);
             this.addRenderableWidget(this.fusionBox);
             this.addRenderableWidget(this.crocodileBox);
-            this.addRenderableWidget(this.reviveBox);
             this.addRenderableWidget(this.slider);
         } else if (this.activeTab == 1) {
             this.list = new BlockList(this.minecraft, this.width, this.height, LIST_TOP, this.height - 36, 24);
@@ -197,8 +194,8 @@ public class LuckyTweaksConfigScreen extends Screen {
             this.addWidget(this.list);
         } else {
             int x = this.width / 2 - 150;
-            this.soloSlider = new IntSlider(x, 64, 300, 20, "Lives (solo)", 1, 10, this.livesSolo);
-            this.multiSlider = new IntSlider(x, 88, 300, 20, "Lives (multiplayer)", 1, 10, this.livesMulti);
+            this.soloSlider = new IntSlider(x, 64, 300, 20, "luckytweaks.gui.lives_solo", 1, 10, this.livesSolo);
+            this.multiSlider = new IntSlider(x, 88, 300, 20, "luckytweaks.gui.lives_coop", 0, 10, this.livesMulti);
             Button heartBtn = Button.builder(heartMsg(), b -> {
                 this.heartStyle = LivesHeartStyles.next(this.heartStyle);
                 b.setMessage(heartMsg());
@@ -207,8 +204,8 @@ public class LuckyTweaksConfigScreen extends Screen {
                 this.hudCorner = HudCorner.byName(this.hudCorner).next().name();
                 b.setMessage(cornerMsg());
             }).bounds(x, 136, 300, 20).build();
-            this.xSlider = new IntSlider(x, 160, 148, 20, "X", -200, 200, this.hudX);
-            this.ySlider = new IntSlider(x + 152, 160, 148, 20, "Y", -200, 200, this.hudY);
+            this.xSlider = new IntSlider(x, 160, 148, 20, "luckytweaks.gui.hud_x", -200, 200, this.hudX);
+            this.ySlider = new IntSlider(x + 152, 160, 148, 20, "luckytweaks.gui.hud_y", -200, 200, this.hudY);
             this.addRenderableWidget(this.soloSlider);
             this.addRenderableWidget(this.multiSlider);
             this.addRenderableWidget(heartBtn);
@@ -217,7 +214,7 @@ public class LuckyTweaksConfigScreen extends Screen {
             this.addRenderableWidget(this.ySlider);
         }
 
-        this.addRenderableWidget(Button.builder(Component.literal("Reset to defaults"), b -> resetDefaults())
+        this.addRenderableWidget(Button.builder(Component.translatable("luckytweaks.gui.reset_defaults"), b -> resetDefaults())
                 .bounds(this.width / 2 - 154, this.height - 28, 150, 20).build());
         this.addRenderableWidget(Button.builder(CommonComponents.GUI_DONE, b -> this.onClose())
                 .bounds(this.width / 2 + 4, this.height - 28, 150, 20).build());
@@ -244,9 +241,6 @@ public class LuckyTweaksConfigScreen extends Screen {
         if (this.crocodileBox != null) {
             this.crocodile = this.crocodileBox.selected();
         }
-        if (this.reviveBox != null) {
-            this.playerRevive = this.reviveBox.selected();
-        }
         if (this.slider != null) {
             this.multiplier = this.slider.multiplier();
         }
@@ -265,11 +259,11 @@ public class LuckyTweaksConfigScreen extends Screen {
     }
 
     private Component heartMsg() {
-        return Component.literal("Heart colour: " + capitalize(this.heartStyle));
+        return Component.translatable("luckytweaks.gui.heart_colour", capitalize(this.heartStyle));
     }
 
     private Component cornerMsg() {
-        return Component.literal("Corner: " + HudCorner.byName(this.hudCorner).label());
+        return Component.translatable("luckytweaks.gui.corner", HudCorner.byName(this.hudCorner).label());
     }
 
     private static String capitalize(String s) {
@@ -280,10 +274,9 @@ public class LuckyTweaksConfigScreen extends Screen {
         this.weaponFix = true;
         this.fusion = true;
         this.crocodile = true;
-        this.playerRevive = true;   // default flipped to ON with the shared-lives system
         this.multiplier = 1.0;
         this.livesSolo = 1;
-        this.livesMulti = 3;
+        this.livesMulti = 1;        // co-op = this PLUS one life per player
         this.heartStyle = "emerald";
         this.hudCorner = "BOT_RIGHT";
         this.hudX = -6;
@@ -311,17 +304,19 @@ public class LuckyTweaksConfigScreen extends Screen {
         gg.drawCenteredString(this.font, this.title, this.width / 2, 8, 0xFFFFFF);
         if (this.activeTab == 1) {
             gg.drawCenteredString(this.font,
-                    Component.literal("Click a lucky block to set where and how often it spawns"),
+                    Component.translatable("luckytweaks.gui.blocks_hint"),
                     this.width / 2, LEGEND_Y, 0xA0A0A0);
         } else if (this.activeTab == 2) {
             // Live preview at the REAL on-screen position, from the current (unsaved) widget values:
             // dragging X/Y moves the hearts, cycling the corner jumps them, the colour recolours -- all
             // before Done. Reads the live widgets (not the captured fields) so it tracks a drag in progress.
-            // The COUNT matches the situation the player is actually in (solo -> solo allowance, a world
-            // opened to LAN or a remote server -> multiplayer allowance), so it mirrors the real HUD.
+            // The COUNT matches the situation the player is actually in, so it mirrors the real HUD: alone,
+            // the flat solo allowance; in co-op, the slider's spare lives PLUS one per player (counted off
+            // the team's high-water mark, which the server syncs with the hearts). Bought lives are left out
+            // on purpose -- this previews the settings, not the run's current luck.
             int solo = this.soloSlider != null ? this.soloSlider.value() : this.livesSolo;
             int multi = this.multiSlider != null ? this.multiSlider.value() : this.livesMulti;
-            int total = Math.max(1, isMultiplayerNow() ? multi : solo);
+            int total = Math.max(1, isMultiplayerNow() ? multi + SharedLivesHud.peakPlayers() : solo);
             int offX = this.xSlider != null ? this.xSlider.value() : this.hudX;
             int offY = this.ySlider != null ? this.ySlider.value() : this.hudY;
             SharedLivesHud.drawPositioned(gg, HudCorner.byName(this.hudCorner), offX, offY,
@@ -354,10 +349,9 @@ public class LuckyTweaksConfigScreen extends Screen {
         TweaksConfig.FIX_LUCKY_WEAPONS.set(this.weaponFix);
         TweaksConfig.ENABLE_LUCK_FUSION.set(this.fusion);
         TweaksConfig.FIX_CROCODILE.set(this.crocodile);
-        TweaksConfig.ENABLE_PLAYER_REVIVE.set(this.playerRevive);
         TweaksConfig.LUCKY_BLOCK_SPAWN_MULTIPLIER.set(this.multiplier);
         TweaksConfig.SHARED_LIVES_SOLO.set(this.livesSolo);
-        TweaksConfig.SHARED_LIVES_MULTIPLAYER.set(this.livesMulti);
+        TweaksConfig.SHARED_LIVES_MULTIPLAYER_BASE.set(this.livesMulti);
 
         // Heart colour + HUD position are CLIENT config (personal), saved to the client spec.
         TweaksClientConfig.CLIENT.livesHeartStyle.set(this.heartStyle);
@@ -420,7 +414,7 @@ public class LuckyTweaksConfigScreen extends Screen {
 
         @Override
         protected void updateMessage() {
-            setMessage(Component.literal(String.format("Lucky block spawn rate: x%.2f", multiplier())));
+            setMessage(Component.translatable("luckytweaks.gui.spawn_rate", String.format("%.2f", multiplier())));
         }
 
         @Override
@@ -431,14 +425,14 @@ public class LuckyTweaksConfigScreen extends Screen {
 
     /** A labelled integer slider over {@code [min, max]} (lives counts and HUD pixel offsets). */
     private static final class IntSlider extends AbstractSliderButton {
-        private final String label;
+        private final String labelKey; // translation key whose single %s argument is the current value
         private final int min;
         private final int max;
 
-        IntSlider(int x, int y, int w, int h, String label, int min, int max, int val) {
+        IntSlider(int x, int y, int w, int h, String labelKey, int min, int max, int val) {
             super(x, y, w, h, Component.empty(),
                     (double) (Math.max(min, Math.min(max, val)) - min) / (max - min));
-            this.label = label;
+            this.labelKey = labelKey;
             this.min = min;
             this.max = max;
             updateMessage();
@@ -450,7 +444,7 @@ public class LuckyTweaksConfigScreen extends Screen {
 
         @Override
         protected void updateMessage() {
-            setMessage(Component.literal(this.label + ": " + value()));
+            setMessage(Component.translatable(this.labelKey, value()));
         }
 
         @Override
@@ -496,26 +490,27 @@ public class LuckyTweaksConfigScreen extends Screen {
             String raw = block.getName().getString();
             // Non-forceable lucky-likes (cross-mod, no controllable world-gen) get the suffix; the
             // suffix AND the dimmed colour below both say "not editable" so meaning never rests on hue.
-            this.name = state != null ? fit(raw, NAME_W) : fit(raw + " (unsupported)", NAME_W);
+            this.name = state != null ? fit(raw, NAME_W) : fit(I18n.get("luckytweaks.gui.unsupported", raw), NAME_W);
         }
 
         /** "spawns: O N E" with the dims this block is currently set to generate in (or off/disabled). */
         private String spawnSummary(State s) {
             if (s.disabled) {
-                return "disabled";
+                return I18n.get("luckytweaks.gui.summary_disabled");
             }
-            StringBuilder sb = new StringBuilder("spawns: ");
+            StringBuilder sb = new StringBuilder();
             boolean any = false;
             for (int i = 0; i < 3; i++) {
                 if (s.dimEnabled[i]) {
                     if (any) {
                         sb.append(' ');
                     }
-                    sb.append(DIM_SHORT[i]);
+                    sb.append(I18n.get(DIM_SHORT_KEYS[i]));
                     any = true;
                 }
             }
-            return any ? sb.toString() : "off everywhere";
+            return any ? I18n.get("luckytweaks.gui.summary_spawns", sb.toString())
+                    : I18n.get("luckytweaks.gui.summary_off");
         }
 
         private String fit(String s, int max) {

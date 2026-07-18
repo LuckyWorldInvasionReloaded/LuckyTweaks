@@ -15,28 +15,32 @@ public final class SharedLivesHudPacket {
     private final int remaining;
     private final int max;
     private final boolean multiplayer;
+    private final int peakPlayers;
 
-    public SharedLivesHudPacket(int remaining, int max, boolean multiplayer) {
+    public SharedLivesHudPacket(int remaining, int max, boolean multiplayer, int peakPlayers) {
         this.remaining = remaining;
         this.max = max;
         this.multiplayer = multiplayer;
+        this.peakPlayers = peakPlayers;
     }
 
     public static void encode(SharedLivesHudPacket msg, FriendlyByteBuf buf) {
         buf.writeVarInt(msg.remaining);
         buf.writeVarInt(msg.max);
         buf.writeBoolean(msg.multiplayer);
+        buf.writeVarInt(msg.peakPlayers);
     }
 
     public static SharedLivesHudPacket decode(FriendlyByteBuf buf) {
-        return new SharedLivesHudPacket(buf.readVarInt(), buf.readVarInt(), buf.readBoolean());
+        return new SharedLivesHudPacket(buf.readVarInt(), buf.readVarInt(), buf.readBoolean(), buf.readVarInt());
     }
 
     public static void handle(SharedLivesHudPacket msg, Supplier<NetworkEvent.Context> ctx) {
         NetworkEvent.Context c = ctx.get();
         // The client class is only referenced inside the DIST-guarded supplier, never classloaded on a server.
         c.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT,
-                () -> () -> com.lwi.luckytweaks.client.SharedLivesHud.accept(msg.remaining, msg.max, msg.multiplayer)));
+                () -> () -> com.lwi.luckytweaks.client.SharedLivesHud.accept(
+                        msg.remaining, msg.max, msg.multiplayer, msg.peakPlayers)));
         c.setPacketHandled(true);
     }
 }

@@ -63,14 +63,14 @@ public final class SacredHeartCap {
         int used = usesOf(player);
         if (used >= max) {
             player.displayClientMessage(
-                    Component.literal("Your body cannot take another Sacred Heart (" + max + "/" + max + ")")
+                    Component.translatable("luckytweaks.msg.sacred_heart_cap", max, max)
                             .withStyle(ChatFormatting.RED), true);
             return false;
         }
         used++;
         player.getPersistentData().putInt(KEY_USES, used);
         player.displayClientMessage(
-                Component.literal("Sacred Heart " + used + "/" + max)
+                Component.translatable("luckytweaks.msg.sacred_heart", used, max)
                         .withStyle(ChatFormatting.LIGHT_PURPLE), true);
         return true;
     }
