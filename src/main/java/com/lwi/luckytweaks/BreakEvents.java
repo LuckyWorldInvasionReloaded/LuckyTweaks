@@ -137,9 +137,37 @@ public final class BreakEvents {
             LuckState.PLAYER.set(dbgPlayer);
         }
 
-        // Notify external listeners (e.g. Lucky XP) that a player broke a lucky block. Fired after
-        // capture, before the roll. capturedLuck is the block's stored Luck -- a proxy for rarity.
-        if (id != null && event.getPlayer() instanceof ServerPlayer serverPlayer
+        // Listener notification + counter arming happen at LOWEST, see notifyListeners below.
+    }
+
+    /**
+     * Notify external listeners (e.g. Lucky XP's experience award) that a player broke a lucky block,
+     * and arm the per-break counters.
+     *
+     * <p><b>LOWEST, and only when the break SURVIVED.</b> The capture above must run at HIGHEST (the
+     * block entity still exists there), but the notification must not: anything cancelling the break at
+     * a lower priority — stand protection, a claim mod, spawn protection — would otherwise leave the
+     * block standing while listeners had already been told it broke. That is a free-XP farm: break the
+     * same protected block forever, get paid every time (reported in a Lucky Lab, 2026-07-19). LOWEST is
+     * the last priority tier, so by the time this runs every cancel has had its say.
+     *
+     * <p>The ThreadLocals set at HIGHEST are still live here (same tick, cleared at end-of-tick), and the
+     * drop roll runs later still, in {@code playerDestroy}, so the counters are armed in time.
+     */
+    @SubscribeEvent(priority = EventPriority.LOWEST)
+    public static void notifyListeners(BlockEvent.BreakEvent event) {
+        if (event.isCanceled() || !(event.getLevel() instanceof ServerLevel)) {
+            return;
+        }
+        BlockState state = event.getState();
+        if (!LuckyBlocks.isLuckyBlock(state)) {
+            return;
+        }
+        ResourceLocation id = ForgeRegistries.BLOCKS.getKey(state.getBlock());
+        if (id == null || DisabledBlocks.isDisabled(id)) {
+            return;
+        }
+        if (event.getPlayer() instanceof ServerPlayer serverPlayer
                 && !(serverPlayer instanceof net.minecraftforge.common.util.FakePlayer)) {
             Integer cl = LuckState.CAPTURED.get();
             LuckyBlockBreakBus.fire(serverPlayer, id, event.getPos(), cl != null ? cl : 0);
@@ -148,7 +176,7 @@ public final class BreakEvents {
             // bumps the stat the first time the Lucky Block mod evaluates a drop carrying the LWLeg
             // marker. FALSE = "armed, not yet counted". Counting at the roll (not by scanning spawned
             // entities) is what makes it survive the suspense reveal delay -- the marked item/entity
-            // spawns ~44 ticks later, but the roll happens here, synchronously, on the break tick.
+            // spawns ~44 ticks later, but the roll happens on the break tick.
             LEGENDARY_COUNTED_THIS_BREAK.set(Boolean.FALSE);
             // Arm the cursed counter for THIS break too (its mixin keys on the curse sound at the roll).
             CURSED_COUNTED_THIS_BREAK.set(Boolean.FALSE);
