@@ -34,8 +34,7 @@ public final class TweaksConfig {
     public static final ForgeConfigSpec.IntValue SACRED_HEART_MAX_USES;
 
     /** The run's shared pool of lives — the pack's difficulty dial (see {@link SharedLives}). */
-    public static final ForgeConfigSpec.IntValue SHARED_LIVES_SOLO;
-    public static final ForgeConfigSpec.IntValue SHARED_LIVES_MULTIPLAYER_BASE;
+    public static final ForgeConfigSpec.IntValue SHARED_LIVES_BASE;
     public static final ForgeConfigSpec.IntValue SHARED_LIVES_PER_PLAYER;
     public static final ForgeConfigSpec.IntValue BOUGHT_LIVES_CAP;
 
@@ -195,32 +194,28 @@ public final class TweaksConfig {
         // would silently have kept revive OFF through the release that is built around it. Anyone who truly
         // wants deaths to go straight through still has PlayerRevive's own config, or can drop the mod.
         builder.push("lives");
-        SHARED_LIVES_SOLO = builder
+        SHARED_LIVES_BASE = builder
                 .comment(
-                        "How many lives the run has when played alone. The pool is SHARED by the team and never",
+                        "Lives the run starts with, solo or co-op alike. The pool is SHARED by the team and never",
                         "refills: every death spends one, and the death that empties it ends the run for good.",
-                        "At 1 (default) the very first death is final -- the pack as it is meant to be played.",
-                        "Raise it to make a run more forgiving; this is the difficulty dial, rather than a switch",
-                        "that would turn hardcore off and take the pack's whole point with it.")
-                .defineInRange("sharedLivesSolo", 1, 1, 100);
-        SHARED_LIVES_MULTIPLAYER_BASE = builder
-                .comment(
-                        "Lives a co-op run starts with, BEFORE the per-player share below is added.",
-                        "A run counts as co-op once two players have actually been online together -- opening to LAN",
-                        "alone, just to get commands, stays on sharedLivesSolo above.",
-                        "Going down spends a life even if you are revived; giving up costs your items, not a life.",
-                        "Total co-op lives = sharedLivesMultiplayerBase + sharedLivesPerPlayer x (team size).",
-                        "Set this to 1 with sharedLivesPerPlayer at 0 for a co-op run on a SINGLE shared life.")
-                .defineInRange("sharedLivesMultiplayerBase", 1, 0, 100);
+                        "At 1 (default) a solo run ends on the very first death -- the pack as it is meant to be",
+                        "played. Raise it to make a run more forgiving; this is the difficulty dial, rather than a",
+                        "switch that would turn hardcore off and take the pack's whole point with it.",
+                        "In co-op the team ALSO gets sharedLivesPerPlayer below for each player, on top of this.")
+                .defineInRange("sharedLivesBase", 1, 1, 100);
         SHARED_LIVES_PER_PLAYER = builder
                 .comment(
-                        "Lives each player adds to a co-op run. One by default, so with the base above a duo runs",
-                        "on 3 and a trio on 4: every player brings their own life, plus one spare for the team.",
-                        "0 makes team size irrelevant -- the run has exactly sharedLivesMultiplayerBase lives, no",
-                        "matter how many players join.",
+                        "Lives each player adds to a CO-OP run, on top of the base above. Alone this never applies:",
+                        "a run only counts as co-op once two players have actually been online together -- opening",
+                        "to LAN alone, just to get commands, stays a solo run on the base alone.",
+                        "One by default, so a duo runs on 3 and a trio on 4: every player brings their own life,",
+                        "and the base is the team's spare.",
+                        "0 makes team size irrelevant -- a co-op run then has exactly the base, so base 1 with 0",
+                        "here is a whole team on a SINGLE shared life.",
                         "The team size used here is the BIGGEST the team has ever been, not who is online right",
                         "now: otherwise a friend logging off would take a life away, and a team that had already",
-                        "spent them would be stranded at zero through no fault of anyone.")
+                        "spent them would be stranded at zero through no fault of anyone.",
+                        "Going down spends a life even if you are revived; giving up costs your items, not a life.")
                 .defineInRange("sharedLivesPerPlayer", 1, 0, 100);
         BOUGHT_LIVES_CAP = builder
                 .comment(

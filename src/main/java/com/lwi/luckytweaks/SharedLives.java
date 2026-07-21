@@ -122,17 +122,17 @@ public class SharedLives extends SavedData {
      * The allowance for this run, keyed on {@link #isMultiplayerRun} rather than on being published, plus
      * any lives bought since (see {@link #buyLife}).
      *
-     * <p>Co-op is {@code sharedLivesMultiplayerBase + sharedLivesPerPlayer x team size}, counted off the
-     * team's {@link #peakPlayers} rather than who happens to be online: on the defaults (1 and 1) a duo
-     * gets 3 and a trio 4, and nobody loses a life because a friend logged off. Per-player at 0 makes team
-     * size irrelevant, so a co-op run can be held to a single shared life (user 2026-07-21).
-     * Alone, it stays the flat singleplayer allowance -- the first death is the run.
+     * <p>One base for solo and co-op alike, plus {@code sharedLivesPerPlayer x team size} once the run is
+     * co-op — counted off the team's {@link #peakPlayers} rather than who happens to be online: on the
+     * defaults (1 and 1) a duo gets 3 and a trio 4, and nobody loses a life because a friend logged off.
+     * Per-player at 0 makes team size irrelevant, so a co-op run can be held to a single shared life
+     * (user 2026-07-21). Alone, the base stands by itself -- the first death is the run.
      */
     public static int maxLives(MinecraftServer server) {
-        int base = isMultiplayerRun(server)
-                ? TweaksConfig.SHARED_LIVES_MULTIPLAYER_BASE.get()
-                        + TweaksConfig.SHARED_LIVES_PER_PLAYER.get() * peakPlayers(server)
-                : TweaksConfig.SHARED_LIVES_SOLO.get();
+        int base = TweaksConfig.SHARED_LIVES_BASE.get();
+        if (isMultiplayerRun(server)) {
+            base += TweaksConfig.SHARED_LIVES_PER_PLAYER.get() * peakPlayers(server);
+        }
         return base + get(server).bought;
     }
 

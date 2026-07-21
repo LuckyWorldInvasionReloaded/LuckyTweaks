@@ -64,9 +64,8 @@ public class LuckyTweaksConfigScreen extends Screen {
     private boolean fusion;
     private boolean crocodile;
     private double multiplier;
-    // Lives tab (solo/multi = COMMON; heart style + HUD position = CLIENT).
-    private int livesSolo;
-    private int livesMulti;
+    // Lives tab (base/per-player = COMMON; heart style + HUD position = CLIENT).
+    private int livesBase;
     private int livesPerPlayer;
     private String heartStyle;
     private String hudCorner;
@@ -83,8 +82,7 @@ public class LuckyTweaksConfigScreen extends Screen {
     private Checkbox fusionBox;
     private Checkbox crocodileBox;
     private MultiplierSlider slider;
-    private IntSlider soloSlider;
-    private IntSlider multiSlider;
+    private IntSlider baseSlider;
     private IntSlider perPlayerSlider;
     private IntSlider xSlider;
     private IntSlider ySlider;
@@ -97,8 +95,7 @@ public class LuckyTweaksConfigScreen extends Screen {
         this.fusion = TweaksConfig.ENABLE_LUCK_FUSION.get();
         this.crocodile = TweaksConfig.FIX_CROCODILE.get();
         this.multiplier = TweaksConfig.LUCKY_BLOCK_SPAWN_MULTIPLIER.get();
-        this.livesSolo = TweaksConfig.SHARED_LIVES_SOLO.get();
-        this.livesMulti = TweaksConfig.SHARED_LIVES_MULTIPLAYER_BASE.get();
+        this.livesBase = TweaksConfig.SHARED_LIVES_BASE.get();
         this.livesPerPlayer = TweaksConfig.SHARED_LIVES_PER_PLAYER.get();
         this.heartStyle = TweaksClientConfig.CLIENT.livesHeartStyle.get();
         this.hudCorner = TweaksClientConfig.CLIENT.livesHudCorner.get();
@@ -168,8 +165,8 @@ public class LuckyTweaksConfigScreen extends Screen {
         this.fusionBox = null;
         this.crocodileBox = null;
         this.slider = null;
-        this.soloSlider = null;
-        this.multiSlider = null;
+        this.baseSlider = null;
+        this.perPlayerSlider = null;
         this.xSlider = null;
         this.ySlider = null;
         this.list = null;
@@ -197,21 +194,19 @@ public class LuckyTweaksConfigScreen extends Screen {
             this.addWidget(this.list);
         } else {
             int x = this.width / 2 - 150;
-            this.soloSlider = new IntSlider(x, 64, 300, 20, "luckytweaks.gui.lives_solo", 1, 10, this.livesSolo);
-            this.multiSlider = new IntSlider(x, 88, 300, 20, "luckytweaks.gui.lives_coop", 0, 10, this.livesMulti);
-            this.perPlayerSlider = new IntSlider(x, 112, 300, 20, "luckytweaks.gui.lives_per_player", 0, 10, this.livesPerPlayer);
+            this.baseSlider = new IntSlider(x, 64, 300, 20, "luckytweaks.gui.lives_base", 1, 10, this.livesBase);
+            this.perPlayerSlider = new IntSlider(x, 88, 300, 20, "luckytweaks.gui.lives_per_player", 0, 10, this.livesPerPlayer);
             Button heartBtn = Button.builder(heartMsg(), b -> {
                 this.heartStyle = LivesHeartStyles.next(this.heartStyle);
                 b.setMessage(heartMsg());
-            }).bounds(x, 136, 300, 20).build();
+            }).bounds(x, 112, 300, 20).build();
             Button cornerBtn = Button.builder(cornerMsg(), b -> {
                 this.hudCorner = HudCorner.byName(this.hudCorner).next().name();
                 b.setMessage(cornerMsg());
-            }).bounds(x, 160, 300, 20).build();
-            this.xSlider = new IntSlider(x, 184, 148, 20, "luckytweaks.gui.hud_x", -200, 200, this.hudX);
-            this.ySlider = new IntSlider(x + 152, 184, 148, 20, "luckytweaks.gui.hud_y", -200, 200, this.hudY);
-            this.addRenderableWidget(this.soloSlider);
-            this.addRenderableWidget(this.multiSlider);
+            }).bounds(x, 136, 300, 20).build();
+            this.xSlider = new IntSlider(x, 160, 148, 20, "luckytweaks.gui.hud_x", -200, 200, this.hudX);
+            this.ySlider = new IntSlider(x + 152, 160, 148, 20, "luckytweaks.gui.hud_y", -200, 200, this.hudY);
+            this.addRenderableWidget(this.baseSlider);
             this.addRenderableWidget(this.perPlayerSlider);
             this.addRenderableWidget(heartBtn);
             this.addRenderableWidget(cornerBtn);
@@ -249,11 +244,8 @@ public class LuckyTweaksConfigScreen extends Screen {
         if (this.slider != null) {
             this.multiplier = this.slider.multiplier();
         }
-        if (this.soloSlider != null) {
-            this.livesSolo = this.soloSlider.value();
-        }
-        if (this.multiSlider != null) {
-            this.livesMulti = this.multiSlider.value();
+        if (this.baseSlider != null) {
+            this.livesBase = this.baseSlider.value();
         }
         if (this.perPlayerSlider != null) {
             this.livesPerPlayer = this.perPlayerSlider.value();
@@ -283,8 +275,7 @@ public class LuckyTweaksConfigScreen extends Screen {
         this.fusion = true;
         this.crocodile = true;
         this.multiplier = 1.0;
-        this.livesSolo = 1;
-        this.livesMulti = 1;        // co-op = this PLUS livesPerPlayer per player
+        this.livesBase = 1;         // co-op = this PLUS livesPerPlayer per player
         this.livesPerPlayer = 1;
         this.heartStyle = "emerald";
         this.hudCorner = "BOT_RIGHT";
@@ -323,10 +314,9 @@ public class LuckyTweaksConfigScreen extends Screen {
             // the flat solo allowance; in co-op, the slider's base lives PLUS the per-player slider times
             // the team's high-water mark (which the server syncs with the hearts). Bought lives are left out
             // on purpose -- this previews the settings, not the run's current luck.
-            int solo = this.soloSlider != null ? this.soloSlider.value() : this.livesSolo;
-            int multi = this.multiSlider != null ? this.multiSlider.value() : this.livesMulti;
+            int base = this.baseSlider != null ? this.baseSlider.value() : this.livesBase;
             int per = this.perPlayerSlider != null ? this.perPlayerSlider.value() : this.livesPerPlayer;
-            int total = Math.max(1, isMultiplayerNow() ? multi + per * SharedLivesHud.peakPlayers() : solo);
+            int total = Math.max(1, base + (isMultiplayerNow() ? per * SharedLivesHud.peakPlayers() : 0));
             int offX = this.xSlider != null ? this.xSlider.value() : this.hudX;
             int offY = this.ySlider != null ? this.ySlider.value() : this.hudY;
             SharedLivesHud.drawPositioned(gg, HudCorner.byName(this.hudCorner), offX, offY,
@@ -360,8 +350,7 @@ public class LuckyTweaksConfigScreen extends Screen {
         TweaksConfig.ENABLE_LUCK_FUSION.set(this.fusion);
         TweaksConfig.FIX_CROCODILE.set(this.crocodile);
         TweaksConfig.LUCKY_BLOCK_SPAWN_MULTIPLIER.set(this.multiplier);
-        TweaksConfig.SHARED_LIVES_SOLO.set(this.livesSolo);
-        TweaksConfig.SHARED_LIVES_MULTIPLAYER_BASE.set(this.livesMulti);
+        TweaksConfig.SHARED_LIVES_BASE.set(this.livesBase);
         TweaksConfig.SHARED_LIVES_PER_PLAYER.set(this.livesPerPlayer);
 
         // Heart colour + HUD position are CLIENT config (personal), saved to the client spec.

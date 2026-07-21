@@ -92,8 +92,8 @@ public final class RunSeal {
                 || !TweaksConfig.SPAWN_RULES.get().isEmpty()
                 // The lives pool is the difficulty dial: extra lives = not the intended run. (There is no
                 // revive toggle to check any more: co-op revive stopped being optional in 1.3.)
-                || TweaksConfig.SHARED_LIVES_SOLO.get() != 1
-                || TweaksConfig.SHARED_LIVES_MULTIPLAYER_BASE.get() != 1
+                || TweaksConfig.SHARED_LIVES_BASE.get() != 1
+                || TweaksConfig.SHARED_LIVES_PER_PLAYER.get() != 1
                 // Raising how many lives a run may buy is the same dial by another name.
                 || TweaksConfig.BOUGHT_LIVES_CAP.get() != 1;
     }
