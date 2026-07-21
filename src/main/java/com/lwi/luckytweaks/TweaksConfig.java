@@ -36,6 +36,7 @@ public final class TweaksConfig {
     /** The run's shared pool of lives — the pack's difficulty dial (see {@link SharedLives}). */
     public static final ForgeConfigSpec.IntValue SHARED_LIVES_SOLO;
     public static final ForgeConfigSpec.IntValue SHARED_LIVES_MULTIPLAYER_BASE;
+    public static final ForgeConfigSpec.IntValue SHARED_LIVES_PER_PLAYER;
     public static final ForgeConfigSpec.IntValue BOUGHT_LIVES_CAP;
 
     /** Lucky blocks switched off by the pack (see {@link DisabledBlocks}). */
@@ -204,15 +205,23 @@ public final class TweaksConfig {
                 .defineInRange("sharedLivesSolo", 1, 1, 100);
         SHARED_LIVES_MULTIPLAYER_BASE = builder
                 .comment(
-                        "Lives a co-op run gets ON TOP of one per player. One by default, so a duo runs on 3 and a",
-                        "trio on 4: every player brings their own life, plus one spare for the team.",
+                        "Lives a co-op run starts with, BEFORE the per-player share below is added.",
                         "A run counts as co-op once two players have actually been online together -- opening to LAN",
                         "alone, just to get commands, stays on sharedLivesSolo above.",
-                        "The per-player part is counted off the BIGGEST the team has ever been, not who is online",
-                        "right now: otherwise a friend logging off would take a life away, and a team that had",
-                        "already spent them would be stranded at zero through no fault of anyone.",
-                        "Going down spends a life even if you are revived; giving up costs your items, not a life.")
+                        "Going down spends a life even if you are revived; giving up costs your items, not a life.",
+                        "Total co-op lives = sharedLivesMultiplayerBase + sharedLivesPerPlayer x (team size).",
+                        "Set this to 1 with sharedLivesPerPlayer at 0 for a co-op run on a SINGLE shared life.")
                 .defineInRange("sharedLivesMultiplayerBase", 1, 0, 100);
+        SHARED_LIVES_PER_PLAYER = builder
+                .comment(
+                        "Lives each player adds to a co-op run. One by default, so with the base above a duo runs",
+                        "on 3 and a trio on 4: every player brings their own life, plus one spare for the team.",
+                        "0 makes team size irrelevant -- the run has exactly sharedLivesMultiplayerBase lives, no",
+                        "matter how many players join.",
+                        "The team size used here is the BIGGEST the team has ever been, not who is online right",
+                        "now: otherwise a friend logging off would take a life away, and a team that had already",
+                        "spent them would be stranded at zero through no fault of anyone.")
+                .defineInRange("sharedLivesPerPlayer", 1, 0, 100);
         BOUGHT_LIVES_CAP = builder
                 .comment(
                         "How many extra lives a run may ever BUY, on top of the allowance above. Other mods can",
