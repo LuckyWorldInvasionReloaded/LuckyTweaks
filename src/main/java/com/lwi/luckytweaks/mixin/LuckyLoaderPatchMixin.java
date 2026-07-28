@@ -12,17 +12,10 @@ import java.io.InputStream;
 /**
  * The single hook of the drop-patch system (see {@link DropPatches}).
  *
- * <p>{@code LoaderKt.getInputStream(baseDir, path)} is the funnel every lucky block config file goes
- * through when the Lucky Block mod loads an addon -- {@code drops.txt}, {@code natural_gen.txt},
- * {@code properties.txt}, structures... -- and, unlike the downstream {@code parseDrops(List)}, it
- * knows BOTH which addon ({@code baseDir}, folder or zip) and which file ({@code path}) is being
- * read. Injecting at RETURN lets {@link DropPatches#maybePatch} swap the stream for a patched
- * in-memory copy when, and only when, a patch targets that exact (addon, file) pair; everything
- * else -- other files, other addons, binary structures -- keeps the loader's original stream
- * untouched.
- *
- * <p>Runs during the Lucky Block mod's construction, long before world load; the patch engine
- * therefore reads its own files straight from disk instead of Forge config.
+ * <p>{@code getInputStream(baseDir, path)} is the funnel every addon config file goes through, and
+ * unlike the downstream {@code parseDrops} it knows both which addon and which file is being read.
+ * The stream is swapped only when a patch targets that exact pair; everything else, binaries
+ * included, passes through untouched.
  */
 @Mixin(targets = "mod.lucky.java.loader.LoaderKt", remap = false)
 public class LuckyLoaderPatchMixin {

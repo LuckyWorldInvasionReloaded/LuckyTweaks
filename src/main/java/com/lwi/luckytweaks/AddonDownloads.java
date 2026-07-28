@@ -15,29 +15,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * First-launch download of lucky block addons the pack is not allowed to redistribute.
+ * Downloads the community lucky block addons at first launch, from
+ * {@code config/luckytweaks/addon_downloads.txt} ({@code name | sha256 | size | url}), so the pack
+ * redistributes none of them -- Pink's own README forbids it and allows the official link instead.
  *
- * <p>Why: Lucky Block Pink's own {@code README.TXT} forbids redistributing its content but allows
- * downloading it from the official link -- the same situation OptiFine had for years, solved the
- * same way. Instead of shipping the addon inside the pack, the pack ships an entry in
- * {@code config/luckytweaks/addon_downloads.txt} and this class fetches the author's official
- * CurseForge file into {@code addons/lucky/} the first time the game starts without it. The
- * Lucky Block mod loads zipped addons natively, and the {@link DropPatches} overlay matches zip
- * names with or without the extension, so a fetched zip behaves exactly like an unpacked folder.
+ * <p>The mod loads zipped addons natively and {@link DropPatches} matches zip names, so a fetched
+ * zip behaves like an unpacked folder; an addon already present as a folder counts as installed.
  *
- * <p>Config grammar, one addon per line ({@code #} comments allowed):
- * <pre>target zip name | sha256 | size in bytes | url</pre>
- *
- * <p>Runs from {@code mixin.LuckyAddonFetchMixin} at the HEAD of the Lucky Block loader's addon
- * scan ({@code findAddonsOrMakeDir}) -- the only point that is guaranteed to run before addon
- * discovery whatever the mod-construction order. The download blocks that scan a few seconds on
- * the first launch only; every later launch sees the file (or the pre-existing 1.3.1 folder,
- * which also counts as present) and does nothing.
- *
- * <p>Failure is soft by design: a download or checksum problem logs a clear message telling the
- * player to fetch the file manually from the official page, deletes any partial file, and lets
- * the game boot without the addon rather than crash or hang. The checksum is mandatory -- a file
- * that does not match the pinned sha256/size byte for byte is never installed.
+ * <p>Failure is soft: a bad download or checksum logs how to install the file by hand and the game
+ * boots without that addon. A file not matching the pinned sha256 and size is never installed.
  */
 public final class AddonDownloads {
 

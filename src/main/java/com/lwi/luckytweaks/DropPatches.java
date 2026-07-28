@@ -15,52 +15,19 @@ import java.util.Locale;
 import java.util.Map;
 
 /**
- * In-memory patching of lucky block addon config files ({@code drops.txt}, {@code natural_gen.txt},
- * ...), so the pack never has to edit a third-party addon's own files on disk.
+ * Patches lucky block addon config files in memory, so the pack never edits a third-party addon's
+ * own files. Patches live in {@code config/luckytweaks/drop_patches/*.txt} and are applied between
+ * reading and parsing (see {@code mixin.LuckyLoaderPatchMixin}).
  *
- * <p>Why: the legendary/cursed markers ({@code LWLeg}/{@code LWCurse}) and a handful of balance fixes
- * used to be written straight into the addons' files. That breaks silently the day an addon is
- * updated (the new files simply don't carry the edits any more -- an 8.3 leftover surviving the Pink
- * 8.4 upgrade proved the failure mode), and it means redistributing modified copies of other people's
- * work. Instead, the patches live in {@code config/luckytweaks/drop_patches/*.txt} and are applied to
- * the file's text between reading and parsing, via {@code mixin.LuckyLoaderPatchMixin} on the Lucky
- * Block mod's {@code LoaderKt.getInputStream(baseDir, path)}. The addon folders stay byte-identical
- * to their authors' releases.
+ * <p>Grammar: {@code @addon <folder or zip name>} / {@code @file <name>} / {@code @match} original
+ * lines / {@code @replace} ours / {@code @end}. Anchors are matched trimmed, scoped to one addon,
+ * and must be a complete drop block -- fragments like {@code group(} would be ambiguous. An anchor
+ * matching nowhere (addon updated) warns instead of failing silently; matching several times is
+ * applied to all and logged.
  *
- * <p>Patch file grammar (one or more entries; {@code #} comments allowed only between blocks):
- *
- * <pre>
- * &#64;addon Lucky Block Pink 8.4 [Everlasting Expansions]
- * &#64;file drops.txt
- * &#64;match
- * ...the author's original line(s), a complete drop block...
- * &#64;replace
- * ...our line(s)...
- * &#64;end
- * </pre>
- *
- * <p>Matching rules, chosen to make confusion impossible in practice:
- * <ul>
- *   <li>Patches are scoped to one addon ({@code @addon} = the addon's folder or zip name), so
- *       identical lines in another addon -- common, the element addons share whole drops verbatim --
- *       can never match.</li>
- *   <li>An anchor is the COMPLETE block of physical lines of a drop (many addons split one drop over
- *       many lines), compared line-by-line after trimming. Fragments like {@code group(} are never
- *       valid anchors on their own.</li>
- *   <li>An anchor found several times in the file is replaced everywhere (two strictly identical
- *       drops ARE the same drop) and logged; an anchor found NOWHERE -- the addon-was-updated case --
- *       is skipped with a loud warning instead of failing silently.</li>
- * </ul>
- *
- * <p>Runs during the Lucky Block mod's construction, BEFORE Forge configs load, so this reads its
- * patch files straight from disk (no {@link TweaksConfig}). Files are read as UTF-8 without BOM
- * handling quirks; only files that actually have patches are ever re-encoded -- everything else
- * passes through the loader untouched, binaries included.
- *
- * <p>Debug: create an empty {@code drop_patches/dump.flag} file and every patched file's final
- * in-memory text is written to {@code config/luckytweaks/drop_patches_dump/}, one file per
- * (addon, file). Diffing those dumps against a reference copy of the old-style edited files is the
- * regression proof: an empty diff means the parser sees exactly the same text as before.
+ * <p>Runs before Forge configs load, hence the direct disk read. Debug: an empty
+ * {@code drop_patches/dump.flag} dumps each patched file's final text to
+ * {@code drop_patches_dump/} for diffing. Rationale and proofs: {@code ADDON_PATCHES.md}.
  */
 public final class DropPatches {
 

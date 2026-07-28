@@ -12,10 +12,9 @@ import java.util.List;
 /**
  * Hook of the addon auto-download (see {@link AddonDownloads}).
  *
- * <p>{@code LoaderKt.findAddonsOrMakeDir} is the Lucky Block mod's addon-folder scan; injecting at
- * its HEAD is the only placement guaranteed to run BEFORE addon discovery regardless of Forge's
- * parallel mod-construction order. A missing configured addon (Pink, not redistributable) is
- * downloaded right there, so the scan that follows finds it like any other addon.
+ * <p>{@code findAddonsOrMakeDir} is the addon-folder scan: injecting at its HEAD is the only
+ * placement guaranteed to run before discovery whatever Forge's mod-construction order, so a
+ * freshly downloaded addon is picked up like any other.
  */
 @Mixin(targets = "mod.lucky.java.loader.LoaderKt", remap = false)
 public class LuckyAddonFetchMixin {
