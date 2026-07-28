@@ -3,19 +3,19 @@ Copyright (c) 2026 Laink. All rights reserved, except as granted below.
 You may:
 
   - read, study, and compile this source code;
-  - use the compiled mod privately: on your own game and on servers you play on;
+  - use the mod, on your own game or on a server;
+  - redistribute the official builds -- mirror them, or include them in a modpack
+    you distribute -- as long as they are unmodified and credited;
   - fork this repository on GitHub and modify your fork for the purpose of
     proposing those changes back here, through issues and pull requests.
 
 You may not, without written permission from the copyright holder:
 
-  - redistribute this mod, or any modified version of it, in source or compiled
-    form -- on CurseForge, Modrinth, a website, a Discord, or anywhere else;
-  - include it in a modpack that you distribute;
+  - distribute a modified version of this mod, in source or compiled form;
   - publish a fork as a separate mod.
 
 Contributions offered through pull requests are licensed to the copyright holder
 for use in this project under these same terms.
 
-The official downloads are on CurseForge. This software is provided "as is",
-without warranty of any kind, express or implied.
+The official downloads are on CurseForge. Provided "as is", without warranty of
+any kind, express or implied.

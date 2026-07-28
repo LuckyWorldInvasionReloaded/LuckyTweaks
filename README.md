@@ -18,4 +18,4 @@ Issues and pull requests are welcome. Keep code and comments in English.
 
 ## License
 
-Source available, not redistributable: you can read it, build it, use it, and propose changes here, but not republish it or ship it in your own modpack. See [LICENSE](LICENSE).
+Official builds are free to redistribute unmodified (mirrors, modpacks) with credit. Modified versions and forks published as separate mods need permission. See [LICENSE](LICENSE).
