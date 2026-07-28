@@ -50,7 +50,7 @@ public final class DebugReport {
         double real = LuckCurve.meanPercentile(drops, effLuck);
         String blk = (blockId != null) ? blockId.getPath() : "?";
         player.sendSystemMessage(Component.literal(String.format(Locale.ROOT,
-                "§b[luck] §f%s §7| base §f%.2f §7→ cible §f%.2f §7(chance §f%+d%%§7) → eff §f%d §7→ réel §f%.2f",
+                "§b[luck] §f%s §7| base §f%.2f §7→ target §f%.2f §7(chance §f%+d%%§7) → eff §f%d §7→ actual §f%.2f",
                 blk, base, target, clamped, effLuck, real)));
         if (chosen != null) {
             double dc = (chosen.getChance() != null) ? chosen.getChance() : 1.0;
