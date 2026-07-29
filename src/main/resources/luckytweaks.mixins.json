@@ -9,6 +9,7 @@
     "CursedCounterMixin",
     "LuckyLoaderPatchMixin",
     "LuckyAddonFetchMixin",
+    "ProjectileNaNGuardMixin",
     "LuckCraftingRecipeMixin",
     "LuckyWorldGenMixin",
     "CrocodileSwallowMixin",
