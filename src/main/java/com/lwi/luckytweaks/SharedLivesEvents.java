@@ -20,6 +20,7 @@ import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
+import com.lwi.luckytweaks.api.PlayerFellListener;
 import com.lwi.luckytweaks.net.SharedLivesNet;
 
 import java.util.List;
@@ -213,6 +214,7 @@ public final class SharedLivesEvents {
     private static void onDowned(MinecraftServer server, ServerPlayer player) {
         int left = SharedLives.consume(server);
         SharedLivesNet.broadcast(server);               // refresh the hearts HUD for everyone
+        PlayerFellBus.fire(player, PlayerFellListener.Reason.DOWNED);
         if (left <= 0) {
             broadcast(server, Component.translatable("luckytweaks.msg.down_no_lives",
                     player.getScoreboardName()), ChatFormatting.DARK_RED);
@@ -229,6 +231,7 @@ public final class SharedLivesEvents {
      */
     private static void onDownedDeath(LivingDeathEvent event, ServerPlayer player) {
         event.setCanceled(true);
+        PlayerFellBus.fire(player, PlayerFellListener.Reason.DIED);
         // Drop where they fell, before the teleport, so a teammate can still go and fetch the loot.
         player.getInventory().dropAll();
         // Clear the bleeding state BEFORE healing: on the paths that skip PlayerRevive's kill() nothing
@@ -245,6 +248,7 @@ public final class SharedLivesEvents {
     private static void onPlainDeath(LivingDeathEvent event, MinecraftServer server, ServerPlayer player) {
         int left = SharedLives.consume(server);
         SharedLivesNet.broadcast(server);               // refresh the hearts HUD for everyone
+        PlayerFellBus.fire(player, PlayerFellListener.Reason.DIED);
         if (left <= 0) {
             // Let this death stand — hardcore turns it into a Game Over — and take the rest down with it.
             broadcast(server, Component.translatable("luckytweaks.msg.game_over"), ChatFormatting.DARK_RED);

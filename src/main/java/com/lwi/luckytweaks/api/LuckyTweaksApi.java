@@ -5,6 +5,7 @@ import com.lwi.luckytweaks.LegendaryDropBus;
 import com.lwi.luckytweaks.LuckCaps;
 import com.lwi.luckytweaks.LuckState;
 import com.lwi.luckytweaks.LuckyBlockBreakBus;
+import com.lwi.luckytweaks.PlayerFellBus;
 import com.lwi.luckytweaks.SharedLives;
 import com.lwi.luckytweaks.TweaksConfig;
 import com.lwi.luckytweaks.net.SharedLivesNet;
@@ -111,6 +112,17 @@ public final class LuckyTweaksApi {
      */
     public static void registerLegendaryDropListener(LegendaryDropListener listener) {
         LegendaryDropBus.register(listener);
+    }
+
+    /**
+     * Register a {@link PlayerFellListener}, notified once per lethal blow the shared-lives system
+     * settles, telling DOWNED (knocked down, revivable) from DIED (respawned, gave up, bled out, or
+     * the run's last life). Watching {@code LivingDeathEvent} yourself cannot make that distinction:
+     * the pack CANCELS a death it saves, so a spent life is indistinguishable from another mod's totem
+     * save. Listeners must not throw; exceptions are swallowed. Added for Lucky XP (XP lost on falling).
+     */
+    public static void registerPlayerFellListener(PlayerFellListener listener) {
+        PlayerFellBus.register(listener);
     }
 
     /** Lives left in the run's shared pool, or -1 when the shared-lives rule is not running. */
