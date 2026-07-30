@@ -8,7 +8,6 @@
     "LegendaryCounterMixin",
     "CursedCounterMixin",
     "LuckyLoaderPatchMixin",
-    "LuckyAddonFetchMixin",
     "ProjectileNaNGuardMixin",
     "LuckCraftingRecipeMixin",
     "LuckyWorldGenMixin",
