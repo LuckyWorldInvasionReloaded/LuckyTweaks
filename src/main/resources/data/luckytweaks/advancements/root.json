@@ -1,0 +1,27 @@
+{
+  "display": {
+    "icon": {
+      "item": "lucky:lucky_block"
+    },
+    "title": {
+      "translate": "advancements.luckytweaks.root.title"
+    },
+    "description": {
+      "translate": "advancements.luckytweaks.root.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false,
+    "background": "minecraft:textures/block/gold_block.png"
+  },
+  "criteria": {
+    "progress": {
+      "trigger": "luckytweaks:lucky_progress",
+      "conditions": {
+        "stat": "broken",
+        "min": 1
+      }
+    }
+  }
+}

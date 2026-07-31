@@ -26,6 +26,10 @@ public final class TweaksConfig {
     /** Master switch for the fusion recipe (see {@link LuckFusionRecipe}). */
     public static final ForgeConfigSpec.BooleanValue ENABLE_LUCK_FUSION;
 
+    /** Master switch for the achievement ladder
+     *  (see {@link com.lwi.luckytweaks.achievements.AchievementEvents}). */
+    public static final ForgeConfigSpec.BooleanValue ENABLE_ACHIEVEMENTS;
+
     /** Make Fuze Relics' crocodile drop swallowed items on death instead of deleting them
      *  (see {@link CrocodileSwallow}). */
     public static final ForgeConfigSpec.BooleanValue FIX_CROCODILE;
@@ -132,6 +136,18 @@ public final class TweaksConfig {
                         "one block whose Luck is the sum of the inputs (bounded by that block's cap). Turn",
                         "this OFF to remove the fusion recipe entirely. Default ON.")
                 .define("enableLuckFusion", true);
+        builder.pop();
+
+        builder.push("achievements");
+        ENABLE_ACHIEVEMENTS = builder
+                .comment(
+                        "Track lucky-block achievements and award them as vanilla advancements (the L key",
+                        "screen, with the usual toast and chat announcement). Counts blocks broken, distinct",
+                        "kinds broken, legendary drops, fusions, and the best/worst Luck ever crafted.",
+                        "Turning this OFF freezes the counters and stops any advancement being granted; the",
+                        "progress already stored is kept, so switching it back on picks up where it left off.",
+                        "Purely additive -- nothing else in the mod reads these counters. Default ON.")
+                .define("enableAchievements", true);
         builder.pop();
 
         builder.push("luckyBlocks");
