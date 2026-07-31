@@ -12,6 +12,7 @@ import net.minecraft.world.Container;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -66,6 +67,12 @@ public final class AchievementEvents {
         if (!enabled() || player == null || blockId == null) {
             return;
         }
+        // Silk touch = the block is picked up, not opened, so there is no roll to be proud of. Counting
+        // it would make every break tier farmable by silk-breaking and re-placing the same block for as
+        // long as you like -- the infinite pump Lucky XP refuses here for the same reason.
+        if (player.getMainHandItem().getEnchantmentLevel(Enchantments.SILK_TOUCH) > 0) {
+            return;
+        }
         AchievementData data = data(player);
         if (data == null) {
             return;
@@ -95,7 +102,9 @@ public final class AchievementEvents {
      * achievement can never be earned on a number the block will not actually deliver.
      *
      * <p>Fired before the grid is emptied, so the inputs are still there to tell a fusion (two or more
-     * lucky blocks in) from a luck craft (one block plus luck items).
+     * lucky blocks in) from a luck craft (one block plus luck items). That input count is a heuristic,
+     * not a recipe check: {@code ItemCraftedEvent} does not carry the recipe in 1.20.1, so any future
+     * recipe taking two lucky blocks would also be counted as a fusion.
      */
     @SubscribeEvent
     public static void onItemCrafted(PlayerEvent.ItemCraftedEvent event) {
@@ -122,9 +131,10 @@ public final class AchievementEvents {
         }
 
         if (countLuckyBlockInputs(event.getInventory()) >= 2) {
-            // Shift-click repeats the craft and fires this once for the whole batch, so count the stack.
-            fire(player, AchievementData.FUSED,
-                    data.increment(player, AchievementData.FUSED, Math.max(1, result.getCount())));
+            // One event per craft -- a shift-click repeats the craft and fires this again each time --
+            // so count 1, not the result stack. The stack is the size of a SINGLE craft, and counting it
+            // would inflate the total on any recipe that ever returns more than one block.
+            fire(player, AchievementData.FUSED, data.increment(player, AchievementData.FUSED, 1));
         }
     }
 
