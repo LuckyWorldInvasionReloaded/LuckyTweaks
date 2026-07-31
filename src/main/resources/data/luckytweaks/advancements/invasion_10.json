@@ -1,0 +1,27 @@
+{
+  "display": {
+    "icon": {
+      "item": "minecraft:netherite_sword"
+    },
+    "title": {
+      "translate": "advancements.luckytweaks.invasion_10.title"
+    },
+    "description": {
+      "translate": "advancements.luckytweaks.invasion_10.description"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "parent": "luckytweaks:invasion_5",
+  "criteria": {
+    "progress": {
+      "trigger": "luckytweaks:lucky_progress",
+      "conditions": {
+        "stat": "invasions",
+        "min": 10
+      }
+    }
+  }
+}

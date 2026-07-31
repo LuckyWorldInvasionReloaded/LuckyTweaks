@@ -1,0 +1,27 @@
+{
+  "display": {
+    "icon": {
+      "item": "minecraft:spyglass"
+    },
+    "title": {
+      "translate": "advancements.luckytweaks.tools_4.title"
+    },
+    "description": {
+      "translate": "advancements.luckytweaks.tools_4.description"
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "parent": "luckytweaks:tools_1",
+  "criteria": {
+    "progress": {
+      "trigger": "luckytweaks:lucky_progress",
+      "conditions": {
+        "stat": "tools_found",
+        "min": 4
+      }
+    }
+  }
+}

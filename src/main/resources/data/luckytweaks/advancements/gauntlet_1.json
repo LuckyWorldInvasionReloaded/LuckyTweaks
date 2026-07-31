@@ -1,0 +1,27 @@
+{
+  "display": {
+    "icon": {
+      "item": "minecraft:magma_block"
+    },
+    "title": {
+      "translate": "advancements.luckytweaks.gauntlet_1.title"
+    },
+    "description": {
+      "translate": "advancements.luckytweaks.gauntlet_1.description"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "parent": "luckytweaks:root",
+  "criteria": {
+    "progress": {
+      "trigger": "luckytweaks:lucky_progress",
+      "conditions": {
+        "stat": "gauntlet_escapes",
+        "min": 1
+      }
+    }
+  }
+}

@@ -48,6 +48,7 @@ public final class AchievementEvents {
             return;
         }
         listenersRegistered = true;
+        PackAchievements.registerListeners();
         LuckyTweaksApi.registerBreakListener(AchievementEvents::onLuckyBlockBroken);
         LuckyTweaksApi.registerLegendaryDropListener((player, pos) -> {
             if (enabled() && player != null) {
@@ -176,18 +177,14 @@ public final class AchievementEvents {
         if (data == null) {
             return;
         }
-        for (String stat : new String[]{
-                AchievementData.BROKEN, AchievementData.BROKEN_TYPES,
-                AchievementData.CRAFTED_LUCK_MAX, AchievementData.CRAFTED_LUCK_MIN,
-                AchievementData.FUSED, AchievementData.LEGENDARY,
-                AchievementData.NEGATIVE_LUCK_BREAKS, AchievementData.MAX_LUCK_BREAKS}) {
+        for (String stat : AchievementData.ALL_STATS) {
             fire(player, stat, data.count(player, stat));
         }
     }
 
     // ---------------------------------------------------------------- plumbing
 
-    private static boolean enabled() {
+    static boolean enabled() {
         // The spec is only loaded once the config file is read; before that (very early load) treat the
         // feature as off rather than risking an exception on an unloaded value.
         try {
@@ -197,13 +194,38 @@ public final class AchievementEvents {
         }
     }
 
-    private static AchievementData data(Player player) {
+    static AchievementData data(Player player) {
         MinecraftServer server = player.getServer();
         return server == null ? null : AchievementData.get(server);
     }
 
     /** Offer a value to the advancement system; a value of 0 is worth offering (0 satisfies nothing). */
-    private static void fire(ServerPlayer player, String stat, int value) {
+    static void fire(ServerPlayer player, String stat, int value) {
         LuckyTriggers.PROGRESS.fire(player, stat, value);
+    }
+
+    /**
+     * Add to a counter and offer the new value, the shape almost every listener wants. No-op when the
+     * ladder is off or the player has no server (a client-side or fake player).
+     */
+    static void bump(ServerPlayer player, String stat, int delta) {
+        if (!enabled() || player == null) {
+            return;
+        }
+        AchievementData data = data(player);
+        if (data != null) {
+            fire(player, stat, data.increment(player, stat, delta));
+        }
+    }
+
+    /** The personal-best twin of {@link #bump}: keep the highest value ever seen, then offer it. */
+    static void raise(ServerPlayer player, String stat, int value) {
+        if (!enabled() || player == null) {
+            return;
+        }
+        AchievementData data = data(player);
+        if (data != null) {
+            fire(player, stat, data.raise(player, stat, value));
+        }
     }
 }

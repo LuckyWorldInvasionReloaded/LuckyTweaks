@@ -1,6 +1,7 @@
 package com.lwi.luckytweaks.api;
 
 import com.lwi.luckytweaks.DebugReport;
+import com.lwi.luckytweaks.achievements.PackAchievements;
 import com.lwi.luckytweaks.LegendaryDropBus;
 import com.lwi.luckytweaks.LuckCaps;
 import com.lwi.luckytweaks.LuckState;
@@ -123,6 +124,35 @@ public final class LuckyTweaksApi {
      */
     public static void registerPlayerFellListener(PlayerFellListener listener) {
         PlayerFellBus.register(listener);
+    }
+
+    /**
+     * Tell the achievement ladder that a Lucky XP world event landed on a MEGA jackpot for this player.
+     *
+     * <p>Lucky Tweaks cannot see this by itself — the event, its roll and its reveal all live inside Lucky
+     * XP — so the mod that knows says so. No-op when the ladder is switched off; safe to call for every
+     * player the event covered. The same goes for the two reports below.
+     */
+    public static void reportMegaJackpot(ServerPlayer player) {
+        PackAchievements.reportMegaJackpot(player);
+    }
+
+    /**
+     * Report one item bought from a shop — a vending machine or the Lucky Merchant. {@code legendary}
+     * marks a purchase taken from a LEGENDARY-rarity slot, which is its own achievement on top of the
+     * plain purchase count. Call it once per item actually handed over (i.e. after the currency is
+     * charged), never on a refused sale.
+     */
+    public static void reportShopPurchase(ServerPlayer player, boolean legendary) {
+        PackAchievements.reportShopPurchase(player, legendary);
+    }
+
+    /**
+     * Report that this player saw an invasion through to its end (Optional Suffering). Call it for each
+     * participant who was still standing when the invasion closed, not for the whole player list.
+     */
+    public static void reportInvasionCompleted(ServerPlayer player) {
+        PackAchievements.reportInvasionCompleted(player);
     }
 
     /** Lives left in the run's shared pool, or -1 when the shared-lives rule is not running. */

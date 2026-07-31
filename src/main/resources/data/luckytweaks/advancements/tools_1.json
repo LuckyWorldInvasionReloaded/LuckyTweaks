@@ -1,0 +1,27 @@
+{
+  "display": {
+    "icon": {
+      "item": "minecraft:compass"
+    },
+    "title": {
+      "translate": "advancements.luckytweaks.tools_1.title"
+    },
+    "description": {
+      "translate": "advancements.luckytweaks.tools_1.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "parent": "luckytweaks:root",
+  "criteria": {
+    "progress": {
+      "trigger": "luckytweaks:lucky_progress",
+      "conditions": {
+        "stat": "tools_found",
+        "min": 1
+      }
+    }
+  }
+}

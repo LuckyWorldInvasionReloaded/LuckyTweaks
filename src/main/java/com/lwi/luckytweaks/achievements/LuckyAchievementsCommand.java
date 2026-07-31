@@ -53,20 +53,29 @@ public final class LuckyAchievementsCommand {
                                                 .executes(ctx -> set(ctx.getSource(),
                                                         EntityArgument.getPlayer(ctx, "player"),
                                                         StringArgumentType.getString(ctx, "stat"),
-                                                        IntegerArgumentType.getInteger(ctx, "value"))))))));
+                                                        IntegerArgumentType.getInteger(ctx, "value")))))))
+                .then(Commands.literal("grant")
+                        .requires(src -> src.hasPermission(2))
+                        .then(Commands.argument("players", EntityArgument.players())
+                                .then(Commands.argument("stat", StringArgumentType.word())
+                                        .suggests((ctx, builder) -> {
+                                            for (String stat : STATS) {
+                                                builder.suggest(stat);
+                                            }
+                                            return builder.buildFuture();
+                                        })
+                                        .executes(ctx -> grant(ctx.getSource(),
+                                                EntityArgument.getPlayers(ctx, "players"),
+                                                StringArgumentType.getString(ctx, "stat"), 1))
+                                        .then(Commands.argument("amount", IntegerArgumentType.integer(1, 1000000))
+                                                .executes(ctx -> grant(ctx.getSource(),
+                                                        EntityArgument.getPlayers(ctx, "players"),
+                                                        StringArgumentType.getString(ctx, "stat"),
+                                                        IntegerArgumentType.getInteger(ctx, "amount"))))))));
     }
 
     /** The counters shown by the report, in reading order. */
-    private static final String[] STATS = {
-            AchievementData.BROKEN,
-            AchievementData.BROKEN_TYPES,
-            AchievementData.MAX_LUCK_BREAKS,
-            AchievementData.NEGATIVE_LUCK_BREAKS,
-            AchievementData.LEGENDARY,
-            AchievementData.FUSED,
-            AchievementData.CRAFTED_LUCK_MAX,
-            AchievementData.CRAFTED_LUCK_MIN,
-    };
+    private static final String[] STATS = AchievementData.ALL_STATS;
 
     private static int report(CommandSourceStack src, ServerPlayer player) {
         AchievementData data = AchievementData.get(src.getServer());
@@ -81,15 +90,32 @@ public final class LuckyAchievementsCommand {
         return Command.SINGLE_SUCCESS;
     }
 
-    private static int set(CommandSourceStack src, ServerPlayer player, String stat, int value) {
-        boolean known = false;
-        for (String s : STATS) {
-            if (s.equals(stat)) {
-                known = true;
-                break;
-            }
+    /**
+     * Add to a counter, for every targeted player at once.
+     *
+     * <p>The wiring seam for everything happening inside another mod: an invasion's end command, a KubeJS
+     * handler on a shop's purchase, a pack script counting anything it likes. {@code set} overwrites,
+     * this ADDS — which is what an event that just happened means. Permission 2, like every other write,
+     * so a command block or a datapack can run it and a player cannot.
+     */
+    private static int grant(CommandSourceStack src, java.util.Collection<ServerPlayer> players,
+                             String stat, int amount) {
+        if (!known(stat)) {
+            src.sendFailure(Component.literal("Unknown counter: " + stat));
+            return 0;
         }
-        if (!known) {
+        AchievementData data = AchievementData.get(src.getServer());
+        for (ServerPlayer player : players) {
+            LuckyTriggers.PROGRESS.fire(player, stat, data.increment(player, stat, amount));
+        }
+        int count = players.size();
+        src.sendSuccess(() -> Component.literal("+" + amount + " " + label(stat) + " for " + count + " player(s)")
+                .withStyle(ChatFormatting.GOLD), true);
+        return count;
+    }
+
+    private static int set(CommandSourceStack src, ServerPlayer player, String stat, int value) {
+        if (!known(stat)) {
             src.sendFailure(Component.literal("Unknown counter: " + stat));
             return 0;
         }
@@ -103,6 +129,15 @@ public final class LuckyAchievementsCommand {
                         player.getGameProfile().getName() + " " + label(stat) + " = " + value)
                 .withStyle(ChatFormatting.GOLD), true);
         return Command.SINGLE_SUCCESS;
+    }
+
+    private static boolean known(String stat) {
+        for (String s : STATS) {
+            if (s.equals(stat)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static String label(String stat) {
