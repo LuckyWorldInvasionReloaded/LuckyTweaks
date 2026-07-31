@@ -1,0 +1,27 @@
+{
+  "display": {
+    "icon": {
+      "item": "minecraft:soul_lantern"
+    },
+    "title": {
+      "translate": "advancements.luckytweaks.cursed_break_25.title"
+    },
+    "description": {
+      "translate": "advancements.luckytweaks.cursed_break_25.description"
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "parent": "luckytweaks:cursed_break_1",
+  "criteria": {
+    "progress": {
+      "trigger": "luckytweaks:lucky_progress",
+      "conditions": {
+        "stat": "negative_luck_breaks",
+        "min": 25
+      }
+    }
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "display": {
+    "icon": {
+      "item": "minecraft:tnt"
+    },
+    "title": {
+      "translate": "advancements.luckytweaks.kamikaze_1.title"
+    },
+    "description": {
+      "translate": "advancements.luckytweaks.kamikaze_1.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "parent": "luckytweaks:root",
+  "criteria": {
+    "progress": {
+      "trigger": "luckytweaks:lucky_progress",
+      "conditions": {
+        "stat": "raw_weapon_uses",
+        "min": 1
+      }
+    }
+  }
+}

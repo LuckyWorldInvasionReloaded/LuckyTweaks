@@ -1,0 +1,27 @@
+{
+  "display": {
+    "icon": {
+      "item": "minecraft:shulker_box"
+    },
+    "title": {
+      "translate": "advancements.luckytweaks.types_25.title"
+    },
+    "description": {
+      "translate": "advancements.luckytweaks.types_25.description"
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "parent": "luckytweaks:types_10",
+  "criteria": {
+    "progress": {
+      "trigger": "luckytweaks:lucky_progress",
+      "conditions": {
+        "stat": "broken_types",
+        "min": 25
+      }
+    }
+  }
+}

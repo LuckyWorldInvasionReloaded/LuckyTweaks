@@ -1,0 +1,27 @@
+{
+  "display": {
+    "icon": {
+      "item": "minecraft:skeleton_skull"
+    },
+    "title": {
+      "translate": "advancements.luckytweaks.cursed_drop_50.title"
+    },
+    "description": {
+      "translate": "advancements.luckytweaks.cursed_drop_50.description"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "parent": "luckytweaks:cursed_drop_10",
+  "criteria": {
+    "progress": {
+      "trigger": "luckytweaks:lucky_progress",
+      "conditions": {
+        "stat": "cursed_drops",
+        "min": 50
+      }
+    }
+  }
+}

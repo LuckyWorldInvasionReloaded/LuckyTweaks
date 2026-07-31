@@ -1,0 +1,27 @@
+{
+  "display": {
+    "icon": {
+      "item": "minecraft:wither_skeleton_skull"
+    },
+    "title": {
+      "translate": "advancements.luckytweaks.crafted_curse_100.title"
+    },
+    "description": {
+      "translate": "advancements.luckytweaks.crafted_curse_100.description"
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "parent": "luckytweaks:crafted_curse_50",
+  "criteria": {
+    "progress": {
+      "trigger": "luckytweaks:lucky_progress",
+      "conditions": {
+        "stat": "crafted_luck_min",
+        "min": -100
+      }
+    }
+  }
+}

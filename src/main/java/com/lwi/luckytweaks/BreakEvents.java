@@ -239,6 +239,8 @@ public final class BreakEvents {
             ServerPlayer p = server.getPlayerList().getPlayer(uuid);
             if (p != null) {
                 CursedStatsBridge.increment(p);
+                // Same delay, same reason: an achievement toast arriving early would spoil the drop too.
+                com.lwi.luckytweaks.achievements.PackAchievements.reportCursedDrop(p);
             }
         });
     }

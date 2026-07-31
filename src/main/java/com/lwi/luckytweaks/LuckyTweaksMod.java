@@ -6,6 +6,7 @@ import net.minecraft.world.item.crafting.SimpleCraftingRecipeSerializer;
 import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.config.ModConfig;
+import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
@@ -47,8 +48,23 @@ public final class LuckyTweaksMod {
         ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, TweaksConfig.COMMON_SPEC);
         ModLoadingContext.get().registerConfig(ModConfig.Type.CLIENT, TweaksClientConfig.CLIENT_SPEC);
         RECIPE_SERIALIZERS.register(FMLJavaModLoadingContext.get().getModEventBus());
+        FMLJavaModLoadingContext.get().getModEventBus().addListener(LuckyTweaksMod::onCommonSetup);
         com.lwi.luckytweaks.locator.LocatorNetwork.init();
         com.lwi.luckytweaks.net.SharedLivesNet.init();
         LOGGER.info("Lucky Tweaks loaded.");
+    }
+
+    /**
+     * Common setup. Advancement criteria are not a Forge registry in 1.20.1 -- they live in vanilla's
+     * static {@code CriteriaTriggers} table, which is read the first time a datapack is parsed, so the
+     * achievement criterion has to be in place by the end of setup. The achievement listeners hook this
+     * mod's OWN break/legendary buses (see {@code achievements.AchievementEvents}), which are static and
+     * outlive a world, hence registering them once here rather than per world load.
+     */
+    private static void onCommonSetup(final FMLCommonSetupEvent event) {
+        event.enqueueWork(() -> {
+            com.lwi.luckytweaks.achievements.LuckyTriggers.register();
+            com.lwi.luckytweaks.achievements.AchievementEvents.registerListeners();
+        });
     }
 }

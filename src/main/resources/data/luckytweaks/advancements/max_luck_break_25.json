@@ -1,0 +1,27 @@
+{
+  "display": {
+    "icon": {
+      "item": "minecraft:emerald_block"
+    },
+    "title": {
+      "translate": "advancements.luckytweaks.max_luck_break_25.title"
+    },
+    "description": {
+      "translate": "advancements.luckytweaks.max_luck_break_25.description"
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "parent": "luckytweaks:max_luck_break_1",
+  "criteria": {
+    "progress": {
+      "trigger": "luckytweaks:lucky_progress",
+      "conditions": {
+        "stat": "max_luck_breaks",
+        "min": 25
+      }
+    }
+  }
+}

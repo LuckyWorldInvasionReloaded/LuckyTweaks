@@ -1,0 +1,27 @@
+{
+  "display": {
+    "icon": {
+      "item": "minecraft:nether_star"
+    },
+    "title": {
+      "translate": "advancements.luckytweaks.crafted_luck_100.title"
+    },
+    "description": {
+      "translate": "advancements.luckytweaks.crafted_luck_100.description"
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "parent": "luckytweaks:crafted_luck_50",
+  "criteria": {
+    "progress": {
+      "trigger": "luckytweaks:lucky_progress",
+      "conditions": {
+        "stat": "crafted_luck_max",
+        "min": 100
+      }
+    }
+  }
+}

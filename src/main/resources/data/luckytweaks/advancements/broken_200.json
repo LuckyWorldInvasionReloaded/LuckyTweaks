@@ -1,0 +1,27 @@
+{
+  "display": {
+    "icon": {
+      "item": "minecraft:netherite_pickaxe"
+    },
+    "title": {
+      "translate": "advancements.luckytweaks.broken_200.title"
+    },
+    "description": {
+      "translate": "advancements.luckytweaks.broken_200.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "parent": "luckytweaks:broken_100",
+  "criteria": {
+    "progress": {
+      "trigger": "luckytweaks:lucky_progress",
+      "conditions": {
+        "stat": "broken",
+        "min": 200
+      }
+    }
+  }
+}

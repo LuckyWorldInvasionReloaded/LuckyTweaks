@@ -1,0 +1,27 @@
+{
+  "display": {
+    "icon": {
+      "item": "minecraft:golden_apple"
+    },
+    "title": {
+      "translate": "advancements.luckytweaks.max_luck_break_1.title"
+    },
+    "description": {
+      "translate": "advancements.luckytweaks.max_luck_break_1.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "parent": "luckytweaks:root",
+  "criteria": {
+    "progress": {
+      "trigger": "luckytweaks:lucky_progress",
+      "conditions": {
+        "stat": "max_luck_breaks",
+        "min": 1
+      }
+    }
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "display": {
+    "icon": {
+      "item": "minecraft:conduit"
+    },
+    "title": {
+      "translate": "advancements.luckytweaks.water_boss_6.title"
+    },
+    "description": {
+      "translate": "advancements.luckytweaks.water_boss_6.description"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "parent": "luckytweaks:water_boss_3",
+  "criteria": {
+    "progress": {
+      "trigger": "luckytweaks:lucky_progress",
+      "conditions": {
+        "stat": "water_bosses",
+        "min": 6
+      }
+    }
+  }
+}

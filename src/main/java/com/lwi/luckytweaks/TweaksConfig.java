@@ -26,6 +26,21 @@ public final class TweaksConfig {
     /** Master switch for the fusion recipe (see {@link LuckFusionRecipe}). */
     public static final ForgeConfigSpec.BooleanValue ENABLE_LUCK_FUSION;
 
+    /** Master switch for the achievement ladder
+     *  (see {@link com.lwi.luckytweaks.achievements.AchievementEvents}). */
+    public static final ForgeConfigSpec.BooleanValue ENABLE_ACHIEVEMENTS;
+
+    /** What the pack-wide half of the ladder watches for
+     *  (see {@link com.lwi.luckytweaks.achievements.PackAchievements}). Every entry is a plain registry
+     *  ID, so a pack that swaps a mod out edits a list instead of waiting for a new jar. */
+    public static final ForgeConfigSpec.ConfigValue<List<? extends String>> ACHIEVEMENT_TOOLS;
+    public static final ForgeConfigSpec.ConfigValue<List<? extends String>> ACHIEVEMENT_WEAPONS;
+    public static final ForgeConfigSpec.ConfigValue<List<? extends String>> ACHIEVEMENT_WATER_BOSSES;
+    public static final ForgeConfigSpec.IntValue ACHIEVEMENT_WATER_BOSS_RANGE;
+    public static final ForgeConfigSpec.ConfigValue<String> ACHIEVEMENT_EXTENDO_GRIP;
+    public static final ForgeConfigSpec.ConfigValue<String> ACHIEVEMENT_CHEESECAKE;
+    public static final ForgeConfigSpec.ConfigValue<String> ACHIEVEMENT_FINAL_BOSS;
+
     /** Make Fuze Relics' crocodile drop swallowed items on death instead of deleting them
      *  (see {@link CrocodileSwallow}). */
     public static final ForgeConfigSpec.BooleanValue FIX_CROCODILE;
@@ -75,6 +90,21 @@ public final class TweaksConfig {
 
     private static final List<String> DEFAULT_HARMFUL_MARKERS = List.of(
             "ID=tnt", "lightning_bolt", "ID=lava", "flowing_lava", "type=block,ID=fire", "cobweb", "spawn_egg");
+
+    /** The eight Lucky Tools, in the order the mod registers them. */
+    private static final List<String> DEFAULT_LUCKY_TOOLS = List.of(
+            "luckytools:lucky_radar", "luckytools:lucky_wand", "luckytools:lucky_shield",
+            "luckytools:lucky_spawner", "luckytools:lucky_idol", "luckytools:lucky_hammer",
+            "luckytools:lucky_ring", "luckytools:lucky_belt");
+
+    /** The Lucky Block mod's three weapons -- the ones that fire a drop table at whatever you hit. */
+    private static final List<String> DEFAULT_LUCKY_WEAPONS = List.of(
+            "lucky:lucky_sword", "lucky:lucky_bow", "lucky:lucky_potion");
+
+    /** Yakurum's bosses: the ones the pack's lucky blocks summon on you, all of them at home in water. */
+    private static final List<String> DEFAULT_WATER_BOSSES = List.of(
+            "yakurum:poseidon", "yakurum:king_triton", "yakurum:kraken",
+            "yakurum:cecaelia", "yakurum:ancient_guardian", "yakurum:water_master");
 
     static {
         ForgeConfigSpec.Builder builder = new ForgeConfigSpec.Builder();
@@ -132,6 +162,63 @@ public final class TweaksConfig {
                         "one block whose Luck is the sum of the inputs (bounded by that block's cap). Turn",
                         "this OFF to remove the fusion recipe entirely. Default ON.")
                 .define("enableLuckFusion", true);
+        builder.pop();
+
+        builder.push("achievements");
+        ENABLE_ACHIEVEMENTS = builder
+                .comment(
+                        "Track lucky-block achievements and award them as vanilla advancements (the L key",
+                        "screen, with the usual toast and chat announcement). Counts blocks broken, distinct",
+                        "kinds broken, legendary drops, fusions, and the best/worst Luck ever crafted.",
+                        "Turning this OFF freezes the counters and stops any advancement being granted; the",
+                        "progress already stored is kept, so switching it back on picks up where it left off.",
+                        "Purely additive -- nothing else in the mod reads these counters. Default ON.")
+                .define("enableAchievements", true);
+        ACHIEVEMENT_TOOLS = builder
+                .comment(
+                        "Items counted as \"Lucky Tools\" for the tools ladder: finding each distinct one, and",
+                        "the (much less fun) moment a tool you already own drops again. Full item IDs; the",
+                        "defaults are the eight Lucky Tools items. An ID that no installed mod provides is",
+                        "simply never matched, so trimming this list is how you shorten the ladder.")
+                .defineListAllowEmpty(List.of("luckyToolItems"), () -> DEFAULT_LUCKY_TOOLS,
+                        o -> o instanceof String s && s.matches("[a-z0-9_.-]+:[a-z0-9_./-]+"));
+        ACHIEVEMENT_WEAPONS = builder
+                .comment(
+                        "Items counted as \"lucky weapons\" for the kamikaze ladder: using one that carries NO",
+                        "Luck at all fires a completely unweighted lucky-block effect at whatever you aimed at,",
+                        "yourself included. Full item IDs. Infused (positive Luck) weapons never count -- the",
+                        "achievement is for going in raw.")
+                .defineListAllowEmpty(List.of("luckyWeaponItems"), () -> DEFAULT_LUCKY_WEAPONS,
+                        o -> o instanceof String s && s.matches("[a-z0-9_.-]+:[a-z0-9_./-]+"));
+        ACHIEVEMENT_WATER_BOSSES = builder
+                .comment(
+                        "Entity IDs counted as \"water bosses\" for the encounter ladder -- meeting one, and",
+                        "eventually meeting every one of them. Defaults to Yakurum's six, the ones the pack's",
+                        "lucky blocks can summon. Encounters are counted on PROXIMITY (see waterBossRange):",
+                        "the achievement is for meeting them, surviving is your problem.")
+                .defineListAllowEmpty(List.of("waterBosses"), () -> DEFAULT_WATER_BOSSES,
+                        o -> o instanceof String s && s.matches("[a-z0-9_.-]+:[a-z0-9_./-]+"));
+        ACHIEVEMENT_WATER_BOSS_RANGE = builder
+                .comment(
+                        "How close (blocks) a water boss has to be to count as met. The scan runs twice a",
+                        "second per player and stops for good once that player has met them all.")
+                .defineInRange("waterBossRange", 32, 4, 128);
+        ACHIEVEMENT_EXTENDO_GRIP = builder
+                .comment(
+                        "The Extendo Grip item, worn in a Curios slot. Extendooooo.",
+                        "Empty, or an ID no mod provides, simply retires that one achievement.")
+                .define("extendoGripItem", "confluence:extendo_grip");
+        ACHIEVEMENT_CHEESECAKE = builder
+                .comment(
+                        "The item whose eating is its own achievement -- the pack's Cheesecake a la merde, a",
+                        "coin flip between a feast and food poisoning. Empty retires the achievement.")
+                .define("cheesecakeItem", "kubejs:cheesecake_a_la_merde");
+        ACHIEVEMENT_FINAL_BOSS = builder
+                .comment(
+                        "The entity whose death is the run's goal -- the Ender Trigon, which is still a",
+                        "minecraft:ender_dragon underneath. Credited to every (non-spectator) player in the",
+                        "fight's dimension: nobody kills that thing alone on a shared pool of lives.")
+                .define("finalBossEntity", "minecraft:ender_dragon");
         builder.pop();
 
         builder.push("luckyBlocks");
