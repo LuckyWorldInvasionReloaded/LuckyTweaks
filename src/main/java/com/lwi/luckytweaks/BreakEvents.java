@@ -69,6 +69,13 @@ public final class BreakEvents {
      *  happened. Armed alongside the guards above, cleared with them at end-of-tick. */
     public static final ThreadLocal<BlockPos> BREAK_POS = ThreadLocal.withInitial(() -> null);
 
+    /** Which lucky block was broken on THIS tick. The roll knows the player, not the block, and the
+     *  block is already gone by the time a drop is announced. Armed and cleared with {@link #BREAK_POS}. */
+    public static final ThreadLocal<ResourceLocation> BREAK_ID = ThreadLocal.withInitial(() -> null);
+
+    /** How long a curse is kept quiet, counter and announcement alike. */
+    private static final int CURSED_REVEAL_TICKS = 100;
+
     /**
      * The curse twin of {@link #LEGENDARY_COUNTED_THIS_BREAK}: the same tri-state one-shot guard, for the
      * CURSED counter ({@code mixin.CursedCounterMixin}, which keys on the Elder Guardian curse sound at
@@ -183,6 +190,7 @@ public final class BreakEvents {
             // Remember where, so LegendaryDropBus listeners get a position: the roll knows the player
             // but not the block. Cleared with the guards at end-of-tick.
             BREAK_POS.set(event.getPos());
+            BREAK_ID.set(id);
         }
     }
 
@@ -210,6 +218,14 @@ public final class BreakEvents {
         // Same one-shot guard, so external listeners (Lucky XP's legendary bonus) also see exactly one
         // event per break. Fired after the stat, still synchronously on the break tick.
         LegendaryDropBus.fire(player, BREAK_POS.get());
+
+        // Announce a legendary RIGHT AWAY, with the drumroll rather than after it: the suspense wrap
+        // takes 2.2 s to reveal the drop, and the whole point is that everyone spends them waiting with
+        // the player. Nothing is spoiled -- the chat says a legendary is coming, not what it is.
+        net.minecraft.server.MinecraftServer server = player.getServer();
+        if (server != null) {
+            RareDropAnnouncer.announce(server, player.getUUID(), BREAK_ID.get(), false);
+        }
     }
 
     /**
@@ -235,11 +251,14 @@ public final class BreakEvents {
             return;
         }
         java.util.UUID uuid = player.getUUID();
-        com.lwi.luckytweaks.util.ServerScheduler.schedule(100, () -> {
+        ResourceLocation blockId = BREAK_ID.get();   // cleared at end-of-tick, long before this fires
+        com.lwi.luckytweaks.util.ServerScheduler.schedule(CURSED_REVEAL_TICKS, () -> {
             ServerPlayer p = server.getPlayerList().getPlayer(uuid);
             if (p != null) {
                 CursedStatsBridge.increment(p);
             }
+            // Same delay as the counter: announcing sooner would out the curse before the player feels it.
+            RareDropAnnouncer.announce(server, uuid, blockId, true);
         });
     }
 
@@ -256,6 +275,7 @@ public final class BreakEvents {
             LEGENDARY_COUNTED_THIS_BREAK.set(null);
             CURSED_COUNTED_THIS_BREAK.set(null);
             BREAK_POS.set(null);
+            BREAK_ID.set(null);
         }
     }
 }

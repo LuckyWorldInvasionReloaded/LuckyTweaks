@@ -56,5 +56,9 @@
   "luckytweaks.gui.rare": "Rare",
   "luckytweaks.gui.rate_hint": "1 in N (lower = more common)",
   "luckytweaks.gui.delete_restart": "Delete & Restart",
-  "luckytweaks.gui.creating_world": "Creating a new world..."
+  "luckytweaks.gui.creating_world": "Creating a new world...",
+    "luckytweaks.announce.drop": "%s got a %s drop from a %s",
+    "luckytweaks.announce.word.legendary": "legendary",
+    "luckytweaks.announce.word.cursed": "cursed",
+    "luckytweaks.announce.unknown_block": "lucky block"
 }

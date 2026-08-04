@@ -26,6 +26,9 @@ public final class TweaksConfig {
     /** Master switch for the fusion recipe (see {@link LuckFusionRecipe}). */
     public static final ForgeConfigSpec.BooleanValue ENABLE_LUCK_FUSION;
 
+    /** Announce legendary and cursed drops in chat (see {@link RareDropAnnouncer}). */
+    public static final ForgeConfigSpec.BooleanValue ANNOUNCE_RARE_DROPS;
+
     /** Make Fuze Relics' crocodile drop swallowed items on death instead of deleting them
      *  (see {@link CrocodileSwallow}). */
     public static final ForgeConfigSpec.BooleanValue FIX_CROCODILE;
@@ -123,6 +126,18 @@ public final class TweaksConfig {
                         "denser spawns. Each natural spawn roll is made this many times as likely (and is",
                         "capped at one block per roll), so the increase is approximate, not exact. Max 3.0.")
                 .defineInRange("luckyBlockSpawnMultiplier", 1.0, 1.0, 3.0);
+        builder.pop();
+
+        builder.push("announcements");
+        ANNOUNCE_RARE_DROPS = builder
+                .comment(
+                        "Announce in chat when a player rolls a legendary (gold) or a cursed (red) drop,",
+                        "naming the block it came from. Only with two or more players connected: alone,",
+                        "the message would just repeat what you already saw.",
+                        "A legendary is announced at once, with the drumroll, so everyone waits out the",
+                        "2.2s reveal together. A curse is held back 5s instead, in step with its counter,",
+                        "so chat does not out it before the player feels it. Default ON.")
+                .define("announceRareDrops", true);
         builder.pop();
 
         builder.push("fusion");
